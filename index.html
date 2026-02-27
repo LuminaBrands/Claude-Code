@@ -677,6 +677,66 @@
       margin: 0.3rem 0;
     }
 
+    /* ── Multi-Result Grid ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .results-grid .result-inner {
+      display: block;
+      padding: 1.25rem 1rem;
+    }
+
+    .results-grid .result-inner .result-value {
+      font-size: 2.2rem;
+    }
+
+    .results-grid .result-inner .result-breakdown {
+      font-size: 0.74rem;
+      line-height: 1.6;
+    }
+
+    .result-config-label {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 0.15rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+
+    .results-summary {
+      margin-top: 1rem;
+      text-align: center;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, var(--primary-darker) 0%, var(--primary) 50%, var(--primary-light) 100%);
+      color: white;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .results-summary::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -20%;
+      width: 50%;
+      height: 120%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .results-summary span {
+      position: relative;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .bento-grid {
@@ -868,12 +928,7 @@
         <span class="icon">&#9201;</span>
         Result
       </div>
-      <div class="result-inner" id="resultCard">
-        <div class="result-label">Estimated time before replacement</div>
-        <div class="result-value" id="resultMonths">--</div>
-        <div class="result-unit" id="resultUnit">months</div>
-        <div class="result-breakdown" id="resultBreakdown"></div>
-      </div>
+      <div id="resultContainer"></div>
       <div id="noResultCard">
         <div class="no-result">
           Enter your water hardness to see your estimated softener replacement timeline.
@@ -1065,11 +1120,8 @@ const dpwValue = document.getElementById('dpwValue');
 const fireplaceRows = document.getElementById('fireplaceRows');
 const addFireplaceBtn = document.getElementById('addFireplaceBtn');
 const totalSegments = document.getElementById('totalSegments');
-const resultCard = document.getElementById('resultCard');
+const resultContainer = document.getElementById('resultContainer');
 const noResultCard = document.getElementById('noResultCard');
-const resultMonths = document.getElementById('resultMonths');
-const resultUnit = document.getElementById('resultUnit');
-const resultBreakdown = document.getElementById('resultBreakdown');
 const tileMap = document.getElementById('tileMap');
 const mapCityLabel = document.getElementById('mapCityLabel');
 const cityNameDisplay = document.getElementById('cityNameDisplay');
@@ -1399,10 +1451,23 @@ function updateTotalSegments() {
 }
 
 // ── Calculation (per-fireplace with individual softeners) ──
+function formatDuration(months) {
+  let val, unit;
+  if (months >= 120) {
+    val = (months / 12).toFixed(1);
+    unit = months / 12 === 1 ? 'year' : 'years';
+  } else {
+    val = months.toFixed(1);
+    unit = 'months';
+  }
+  if (val.endsWith('.0')) val = val.slice(0, -2);
+  return { val, unit };
+}
+
 function calculate() {
   const ppm = selectedPPM;
   if (!ppm || ppm <= 0) {
-    resultCard.classList.remove('active');
+    resultContainer.innerHTML = '';
     noResultCard.style.display = '';
     return;
   }
@@ -1414,8 +1479,6 @@ function calculate() {
 
   const fpResults = [];
   let overallMinMonths = Infinity;
-  let totalGallons = 0;
-  let totalGrains = 0;
 
   fireplaceRows.querySelectorAll('.fireplace-row').forEach((row, idx) => {
     const sizeVal = parseInt(row.querySelector('.fp-size').value);
@@ -1428,60 +1491,72 @@ function calculate() {
     const grainsPerMonth = gallonsPerMonth * grpg;
     const months = grainsPerMonth > 0 ? capacity / grainsPerMonth : Infinity;
 
-    totalGallons += gallonsPerMonth;
-    totalGrains += grainsPerMonth;
-
     fpResults.push({ idx: idx + 1, sizeLabel, qty, segments, capacity, gallonsPerMonth, grainsPerMonth, months });
     if (months < overallMinMonths) overallMinMonths = months;
   });
 
   noResultCard.style.display = 'none';
-  resultCard.classList.add('active');
 
-  // Display soonest replacement
-  let displayVal, unitText;
-  if (overallMinMonths >= 120) {
-    displayVal = (overallMinMonths / 12).toFixed(1);
-    unitText = 'years';
+  const isMulti = fpResults.length > 1;
+
+  if (!isMulti) {
+    // Single configuration — original single-card display
+    const fp = fpResults[0];
+    const { val: displayVal, unit: unitText } = formatDuration(fp.months);
+
+    resultContainer.innerHTML = `
+      <div class="result-inner active">
+        <div class="result-label">Estimated time before replacement</div>
+        <div class="result-value">${displayVal}</div>
+        <div class="result-unit">${unitText}</div>
+        <div class="result-breakdown">
+          <div class="row"><span class="label">Water hardness</span><span>${ppm} PPM (${grpg.toFixed(1)} GrPG)</span></div>
+          <div class="row"><span class="label">Usage</span><span>${hpd} hrs/day, ${dpw} days/wk</span></div>
+          <div class="divider"></div>
+          <div class="row"><span class="label">${fp.qty}&times;${fp.sizeLabel} (${fp.capacity}g softener)</span><span>${fp.segments} segments</span></div>
+          <div class="row"><span class="label">Water per month</span><span>${fp.gallonsPerMonth.toFixed(2)} gal</span></div>
+          <div class="row"><span class="label">Grains per month</span><span>${fp.grainsPerMonth.toFixed(2)}</span></div>
+          <div class="divider"></div>
+          <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${displayVal} ${unitText}</strong></span></div>
+        </div>
+      </div>`;
   } else {
-    displayVal = overallMinMonths.toFixed(1);
-    unitText = 'months';
+    // Multiple configurations — independent side-by-side cards
+    let cardsHtml = '<div class="results-grid">';
+
+    fpResults.forEach(fp => {
+      const { val: fpVal, unit: fpUnit } = formatDuration(fp.months);
+
+      cardsHtml += `
+        <div class="result-inner active">
+          <div class="result-config-label">Fireplace ${fp.idx}</div>
+          <div class="result-label">Replace softener in</div>
+          <div class="result-value">${fpVal}</div>
+          <div class="result-unit">${fpUnit}</div>
+          <div class="result-breakdown">
+            <div class="row"><span class="label">Size</span><span>${fp.qty}&times;${fp.sizeLabel}</span></div>
+            <div class="row"><span class="label">Segments</span><span>${fp.segments}</span></div>
+            <div class="row"><span class="label">Softener</span><span>${fp.capacity} grain</span></div>
+            <div class="divider"></div>
+            <div class="row"><span class="label">Water/month</span><span>${fp.gallonsPerMonth.toFixed(2)} gal</span></div>
+            <div class="row"><span class="label">Grains/month</span><span>${fp.grainsPerMonth.toFixed(2)}</span></div>
+            <div class="divider"></div>
+            <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${fpVal} ${fpUnit}</strong></span></div>
+          </div>
+        </div>`;
+    });
+
+    cardsHtml += '</div>';
+
+    // Summary bar
+    const { val: summaryVal, unit: summaryUnit } = formatDuration(overallMinMonths);
+    cardsHtml += `
+      <div class="results-summary">
+        <span>&#9201; Soonest replacement: <strong>${summaryVal} ${summaryUnit}</strong> &nbsp;|&nbsp; Water hardness: ${ppm} PPM &nbsp;|&nbsp; Usage: ${hpd} hrs/day, ${dpw} days/wk</span>
+      </div>`;
+
+    resultContainer.innerHTML = cardsHtml;
   }
-  if (displayVal.endsWith('.0')) displayVal = displayVal.slice(0, -2);
-
-  resultMonths.textContent = displayVal;
-  resultUnit.textContent = fpResults.length > 1
-    ? `${unitText} until next replacement`
-    : `${unitText} before replacement`;
-
-  // Build breakdown
-  let html = `
-    <div class="row"><span class="label">Water hardness</span><span>${ppm} PPM (${grpg.toFixed(1)} GrPG)</span></div>
-    <div class="row"><span class="label">Usage</span><span>${hpd} hrs/day, ${dpw} days/wk</span></div>
-    <div class="divider"></div>`;
-
-  fpResults.forEach(fp => {
-    let fpDisplay, fpUnit;
-    if (fp.months >= 120) {
-      fpDisplay = (fp.months / 12).toFixed(1);
-      fpUnit = 'yr';
-    } else {
-      fpDisplay = fp.months.toFixed(1);
-      fpUnit = 'mo';
-    }
-    if (fpDisplay.endsWith('.0')) fpDisplay = fpDisplay.slice(0, -2);
-
-    html += `<div class="row"><span class="label">FP${fp.idx}: ${fp.qty}&times;${fp.sizeLabel} (${fp.capacity}g)</span><span><strong>${fpDisplay} ${fpUnit}</strong> &middot; ${fp.segments} seg &middot; ${fp.gallonsPerMonth.toFixed(1)} gal/mo</span></div>`;
-  });
-
-  html += `<div class="divider"></div>
-    <div class="row"><span class="label">Total segments</span><span>${getTotalSegments()}</span></div>
-    <div class="row"><span class="label">Total water/month</span><span>${totalGallons.toFixed(2)} gal</span></div>
-    <div class="row"><span class="label">Total grains/month</span><span>${totalGrains.toFixed(2)}</span></div>
-    <div class="divider"></div>
-    <div class="row"><span class="label"><strong>${fpResults.length > 1 ? 'Soonest replacement' : 'Replace every'}</strong></span><span><strong>${displayVal} ${unitText}</strong></span></div>`;
-
-  resultBreakdown.innerHTML = html;
 }
 
 // ── Init ──
