@@ -61,29 +61,10 @@
       position: relative;
     }
 
-    .logo-mark {
-      flex-shrink: 0;
+    .header-logo img {
+      height: 48px;
+      width: auto;
       filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
-    }
-
-    .header-text h1 {
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: 2.5px;
-      line-height: 1.1;
-    }
-
-    .header-text h1 span {
-      font-weight: 300;
-      opacity: 0.9;
-    }
-
-    .header-text p {
-      font-size: 0.85rem;
-      opacity: 0.75;
-      margin-top: 0.15rem;
-      font-weight: 400;
-      letter-spacing: 0.5px;
     }
 
     /* ── Container & Bento Grid ── */
@@ -790,20 +771,8 @@
 
 <header>
   <div class="header-inner">
-    <svg class="logo-mark" width="40" height="52" viewBox="0 0 42 54" fill="none">
-      <defs>
-        <linearGradient id="logoGrad" x1="21" y1="4" x2="21" y2="50" gradientUnits="userSpaceOnUse">
-          <stop stop-color="#b8e4ff"/>
-          <stop offset="1" stop-color="#ffffff"/>
-        </linearGradient>
-      </defs>
-      <path d="M21 4C21 4 4 22 4 34C4 43.5 11.5 50 21 50C30.5 50 38 43.5 38 34C38 22 21 4 21 4Z" fill="url(#logoGrad)"/>
-      <path d="M12 36Q17 31 21 34Q25 37 30 33" stroke="rgba(56,182,255,0.5)" stroke-width="2" stroke-linecap="round" fill="none"/>
-      <path d="M14 41Q19 37 23 39Q27 41 28 38" stroke="rgba(56,182,255,0.3)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-    </svg>
-    <div class="header-text">
-      <h1>VAPOR <span>PURE</span></h1>
-      <p>Water Softener Replacement Calculator</p>
+    <div class="header-logo">
+      <img src="https://cdn.shopify.com/s/files/1/0671/5562/4256/files/Asset_3_21e6786a-c276-4d29-9d74-8fabf5302656.png?v=1772213619" alt="Logo">
     </div>
   </div>
 </header>
