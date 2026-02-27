@@ -275,6 +275,116 @@
     .water-hardness-display.hard { background: #fed7aa; color: #9a3412; }
     .water-hardness-display.very-hard { background: #fecaca; color: #991b1b; }
 
+    /* ── Hardness Scale ── */
+    .hardness-scale {
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .hardness-scale-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hardness-bar {
+      position: relative;
+      display: flex;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 22px;
+    }
+
+    .hardness-bar-segment {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.62rem;
+      font-weight: 600;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .hardness-bar-segment.seg-soft {
+      background: #bbf7d0;
+      color: #166534;
+      flex: 60;
+    }
+
+    .hardness-bar-segment.seg-moderate {
+      background: #fde68a;
+      color: #854d0e;
+      flex: 60;
+    }
+
+    .hardness-bar-segment.seg-hard {
+      background: #fdba74;
+      color: #9a3412;
+      flex: 60;
+    }
+
+    .hardness-bar-segment.seg-vhard {
+      background: #fca5a5;
+      color: #991b1b;
+      flex: 60;
+    }
+
+    .hardness-bar-labels {
+      display: flex;
+      margin-top: 0.2rem;
+      font-size: 0.6rem;
+      color: var(--text-light);
+    }
+
+    .hardness-bar-labels span {
+      flex: 60;
+      text-align: center;
+    }
+
+    .hardness-scale-marker {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 3px;
+      background: var(--text);
+      border-radius: 2px;
+      transform: translateX(-50%);
+      box-shadow: 0 0 0 2px white, 0 0 4px rgba(0,0,0,0.3);
+      transition: left 0.4s ease;
+      display: none;
+      z-index: 2;
+    }
+
+    .hardness-scale-marker.active {
+      display: block;
+    }
+
+    /* ── City Name Display ── */
+    .city-name-display {
+      display: none;
+      margin-top: 0.45rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 6px;
+      background: var(--primary-lightest);
+      color: var(--primary-dark);
+      font-size: 0.82rem;
+      font-weight: 500;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .city-name-display.active {
+      display: flex;
+    }
+
+    .city-name-display .city-icon {
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
     .or-divider {
       text-align: center;
       color: var(--text-light);
@@ -632,6 +742,10 @@
           <span class="search-icon">&#128269;</span>
           <div class="autocomplete-list" id="autocompleteList"></div>
         </div>
+        <div class="city-name-display" id="cityNameDisplay">
+          <span class="city-icon">&#128205;</span>
+          <span id="cityNameText"></span>
+        </div>
         <div class="water-hardness-display" id="hardnessDisplay">
           <span id="hardnessText"></span>
           <span id="hardnessClassification"></span>
@@ -641,6 +755,22 @@
       <div class="form-group">
         <label>Water hardness in PPM <span class="hint">(parts per million)</span></label>
         <input type="number" id="ppmInput" placeholder="e.g. 200" min="0" max="1000" step="1">
+      </div>
+      <div class="hardness-scale" id="hardnessScale">
+        <div class="hardness-scale-label">Water Hardness Scale</div>
+        <div class="hardness-bar">
+          <div class="hardness-bar-segment seg-soft">Soft</div>
+          <div class="hardness-bar-segment seg-moderate">Moderate</div>
+          <div class="hardness-bar-segment seg-hard">Hard</div>
+          <div class="hardness-bar-segment seg-vhard">Very Hard</div>
+          <div class="hardness-scale-marker" id="hardnessMarker"></div>
+        </div>
+        <div class="hardness-bar-labels">
+          <span>0–60</span>
+          <span>61–120</span>
+          <span>121–180</span>
+          <span>181+ PPM</span>
+        </div>
       </div>
       <div class="data-source">
         Data from municipal reports. For accuracy, check your
@@ -942,6 +1072,9 @@ const resultUnit = document.getElementById('resultUnit');
 const resultBreakdown = document.getElementById('resultBreakdown');
 const tileMap = document.getElementById('tileMap');
 const mapCityLabel = document.getElementById('mapCityLabel');
+const cityNameDisplay = document.getElementById('cityNameDisplay');
+const cityNameText = document.getElementById('cityNameText');
+const hardnessMarker = document.getElementById('hardnessMarker');
 
 let selectedPPM = null;
 let highlightedIndex = -1;
@@ -1055,6 +1188,7 @@ zipSearch.addEventListener('input', function() {
       selectedPPM = ppm;
       autocompleteList.classList.remove('active');
       showHardnessInfo(ppm);
+      showCityName(city, state);
       highlightState(state, name, ppm);
       calculate();
     });
@@ -1068,6 +1202,7 @@ zipSearch.addEventListener('input', function() {
       ppmInput.value = data.ppm;
       selectedPPM = data.ppm;
       showHardnessInfo(data.ppm);
+      showCityName(data.city, data.state);
       highlightState(data.state, `${data.city}, ${data.state}`, data.ppm);
       autocompleteList.classList.remove('active');
       calculate();
@@ -1116,11 +1251,13 @@ ppmInput.addEventListener('input', function() {
     showHardnessInfo(val);
     if (document.activeElement === ppmInput) {
       zipSearch.value = '';
+      hideCityName();
       highlightState(null);
     }
   } else {
     selectedPPM = null;
     hardnessDisplay.classList.remove('active');
+    hardnessMarker.classList.remove('active');
   }
   calculate();
 });
@@ -1136,6 +1273,44 @@ function showHardnessInfo(ppm) {
   hardnessDisplay.className = 'water-hardness-display active ' + cls;
   hardnessText.textContent = `${ppm} PPM = ${grpg} GPG`;
   hardnessClassification.textContent = label;
+  updateHardnessMarker(ppm);
+}
+
+function updateHardnessMarker(ppm) {
+  if (!ppm || ppm <= 0) {
+    hardnessMarker.classList.remove('active');
+    return;
+  }
+  // Scale: 0-240 PPM maps across the bar (soft 0-60, moderate 61-120, hard 121-180, vhard 181+)
+  // Each segment is 25% of the bar width
+  const maxPpm = 240;
+  const clampedPpm = Math.min(ppm, maxPpm);
+  let percent;
+  if (clampedPpm <= 60) {
+    percent = (clampedPpm / 60) * 25;
+  } else if (clampedPpm <= 120) {
+    percent = 25 + ((clampedPpm - 60) / 60) * 25;
+  } else if (clampedPpm <= 180) {
+    percent = 50 + ((clampedPpm - 120) / 60) * 25;
+  } else {
+    percent = 75 + ((clampedPpm - 180) / 60) * 25;
+  }
+  percent = Math.max(1, Math.min(99, percent));
+  hardnessMarker.style.left = percent + '%';
+  hardnessMarker.classList.add('active');
+}
+
+function showCityName(city, state) {
+  if (city && state) {
+    cityNameText.textContent = `${city}, ${state}`;
+    cityNameDisplay.classList.add('active');
+  } else {
+    cityNameDisplay.classList.remove('active');
+  }
+}
+
+function hideCityName() {
+  cityNameDisplay.classList.remove('active');
 }
 
 // ── Sliders ──
