@@ -100,7 +100,7 @@
       grid-template-areas:
         "hardness map"
         "fireplace usage"
-        "softener result";
+        "result result";
     }
 
     /* ── Card Base ── */
@@ -122,7 +122,7 @@
     .map-card { grid-area: map; }
     .fireplace-card { grid-area: fireplace; }
     .usage-card { grid-area: usage; }
-    .softener-card { grid-area: softener; }
+    /* softener is now per-fireplace row */
     .result-area { grid-area: result; }
 
     .card-title {
@@ -435,41 +435,9 @@
 
     .total-segments strong { color: var(--text); }
 
-    /* ── Softener Options ── */
-    .softener-options {
-      display: flex;
-      gap: 0.6rem;
-    }
-
-    .softener-option {
-      flex: 1;
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 0.85rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: white;
-    }
-
-    .softener-option:hover { border-color: var(--primary-light); }
-
-    .softener-option.selected {
-      border-color: var(--primary);
-      background: linear-gradient(135deg, var(--primary-lightest) 0%, #f0f9ff 100%);
-    }
-
-    .softener-option .grain-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--primary-dark);
-    }
-
-    .softener-option .grain-label {
-      font-size: 0.78rem;
-      color: var(--text-light);
-      margin-top: 0.1rem;
-    }
+    /* ── Per-row softener select ── */
+    .fireplace-row .fp-softener-group { flex: 0.8; }
+    .fireplace-row .fp-softener-group select { font-size: 0.82rem; }
 
     /* ── Sliders ── */
     .slider-group {
@@ -608,7 +576,6 @@
           "map"
           "fireplace"
           "usage"
-          "softener"
           "result";
       }
 
@@ -621,7 +588,7 @@
     @media (max-width: 480px) {
       .fireplace-row { flex-direction: column; gap: 0.4rem; }
       .fireplace-row .remove-btn { align-self: flex-end; }
-      .softener-options { flex-direction: column; }
+      .fp-softener-group select { font-size: 0.78rem; }
       .map-legend { gap: 0.4rem; }
       .state-tile { font-size: 0.5rem; }
     }
@@ -659,9 +626,9 @@
         Water Hardness
       </div>
       <div class="form-group">
-        <label>Search by city <span class="hint">(type city name)</span></label>
+        <label>Search by ZIP code <span class="hint">(enter your ZIP)</span></label>
         <div class="search-wrapper">
-          <input type="text" id="citySearch" placeholder="e.g. Phoenix, AZ" autocomplete="off">
+          <input type="text" id="zipSearch" placeholder="e.g. 85001" autocomplete="off" maxlength="5" inputmode="numeric">
           <span class="search-icon">&#128269;</span>
           <div class="autocomplete-list" id="autocompleteList"></div>
         </div>
@@ -726,6 +693,13 @@
               <option value="5">5</option>
             </select>
           </div>
+          <div class="form-group fp-softener-group">
+            <label>Softener</label>
+            <select class="fp-softener">
+              <option value="300">300 grain</option>
+              <option value="700">700 grain</option>
+            </select>
+          </div>
         </div>
       </div>
       <button class="add-fireplace-btn" id="addFireplaceBtn">+ Add another fireplace size</button>
@@ -758,24 +732,6 @@
       </div>
     </div>
 
-    <!-- Softener Size -->
-    <div class="card softener-card">
-      <div class="card-title">
-        <span class="step">4</span>
-        Softener Size
-      </div>
-      <div class="softener-options">
-        <div class="softener-option selected" data-grains="300" onclick="selectSoftener(this)">
-          <div class="grain-value">300</div>
-          <div class="grain-label">grain capacity</div>
-        </div>
-        <div class="softener-option" data-grains="700" onclick="selectSoftener(this)">
-          <div class="grain-value">700</div>
-          <div class="grain-label">grain capacity</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Result -->
     <div class="card result-area">
       <div class="card-title">
@@ -799,200 +755,159 @@
 </div>
 
 <script>
-// ── Water Hardness Database ──
-const CITIES = [
-  { city: "Birmingham", state: "AL", ppm: 48 },
-  { city: "Huntsville", state: "AL", ppm: 100 },
-  { city: "Mobile", state: "AL", ppm: 40 },
-  { city: "Montgomery", state: "AL", ppm: 55 },
-  { city: "Tuscaloosa", state: "AL", ppm: 30 },
-  { city: "Anchorage", state: "AK", ppm: 28 },
-  { city: "Fairbanks", state: "AK", ppm: 160 },
-  { city: "Juneau", state: "AK", ppm: 15 },
-  { city: "Chandler", state: "AZ", ppm: 260 },
-  { city: "Gilbert", state: "AZ", ppm: 280 },
-  { city: "Glendale", state: "AZ", ppm: 240 },
-  { city: "Mesa", state: "AZ", ppm: 250 },
-  { city: "Peoria", state: "AZ", ppm: 230 },
-  { city: "Phoenix", state: "AZ", ppm: 232 },
-  { city: "Scottsdale", state: "AZ", ppm: 250 },
-  { city: "Tempe", state: "AZ", ppm: 260 },
-  { city: "Tucson", state: "AZ", ppm: 200 },
-  { city: "Fayetteville", state: "AR", ppm: 50 },
-  { city: "Little Rock", state: "AR", ppm: 20 },
-  { city: "Anaheim", state: "CA", ppm: 250 },
-  { city: "Bakersfield", state: "CA", ppm: 180 },
-  { city: "Fresno", state: "CA", ppm: 150 },
-  { city: "Irvine", state: "CA", ppm: 230 },
-  { city: "Long Beach", state: "CA", ppm: 220 },
-  { city: "Los Angeles", state: "CA", ppm: 210 },
-  { city: "Oakland", state: "CA", ppm: 40 },
-  { city: "Riverside", state: "CA", ppm: 290 },
-  { city: "Sacramento", state: "CA", ppm: 50 },
-  { city: "San Bernardino", state: "CA", ppm: 280 },
-  { city: "San Diego", state: "CA", ppm: 250 },
-  { city: "San Francisco", state: "CA", ppm: 30 },
-  { city: "San Jose", state: "CA", ppm: 180 },
-  { city: "Santa Ana", state: "CA", ppm: 260 },
-  { city: "Santa Barbara", state: "CA", ppm: 350 },
-  { city: "Stockton", state: "CA", ppm: 120 },
-  { city: "Aurora", state: "CO", ppm: 85 },
-  { city: "Boulder", state: "CO", ppm: 40 },
-  { city: "Colorado Springs", state: "CO", ppm: 75 },
-  { city: "Denver", state: "CO", ppm: 70 },
-  { city: "Fort Collins", state: "CO", ppm: 55 },
-  { city: "Bridgeport", state: "CT", ppm: 30 },
-  { city: "Hartford", state: "CT", ppm: 25 },
-  { city: "New Haven", state: "CT", ppm: 22 },
-  { city: "Stamford", state: "CT", ppm: 35 },
-  { city: "Dover", state: "DE", ppm: 120 },
-  { city: "Wilmington", state: "DE", ppm: 95 },
-  { city: "Fort Lauderdale", state: "FL", ppm: 210 },
-  { city: "Jacksonville", state: "FL", ppm: 240 },
-  { city: "Miami", state: "FL", ppm: 220 },
-  { city: "Orlando", state: "FL", ppm: 170 },
-  { city: "St. Petersburg", state: "FL", ppm: 140 },
-  { city: "Tampa", state: "FL", ppm: 250 },
-  { city: "West Palm Beach", state: "FL", ppm: 190 },
-  { city: "Atlanta", state: "GA", ppm: 30 },
-  { city: "Augusta", state: "GA", ppm: 25 },
-  { city: "Columbus", state: "GA", ppm: 22 },
-  { city: "Savannah", state: "GA", ppm: 45 },
-  { city: "Honolulu", state: "HI", ppm: 90 },
-  { city: "Boise", state: "ID", ppm: 150 },
-  { city: "Idaho Falls", state: "ID", ppm: 200 },
-  { city: "Nampa", state: "ID", ppm: 180 },
-  { city: "Aurora", state: "IL", ppm: 300 },
-  { city: "Chicago", state: "IL", ppm: 140 },
-  { city: "Naperville", state: "IL", ppm: 300 },
-  { city: "Peoria", state: "IL", ppm: 270 },
-  { city: "Rockford", state: "IL", ppm: 350 },
-  { city: "Springfield", state: "IL", ppm: 260 },
-  { city: "Evansville", state: "IN", ppm: 200 },
-  { city: "Fort Wayne", state: "IN", ppm: 280 },
-  { city: "Indianapolis", state: "IN", ppm: 290 },
-  { city: "South Bend", state: "IN", ppm: 310 },
-  { city: "Cedar Rapids", state: "IA", ppm: 300 },
-  { city: "Davenport", state: "IA", ppm: 250 },
-  { city: "Des Moines", state: "IA", ppm: 220 },
-  { city: "Iowa City", state: "IA", ppm: 310 },
-  { city: "Kansas City", state: "KS", ppm: 180 },
-  { city: "Overland Park", state: "KS", ppm: 150 },
-  { city: "Topeka", state: "KS", ppm: 200 },
-  { city: "Wichita", state: "KS", ppm: 250 },
-  { city: "Lexington", state: "KY", ppm: 140 },
-  { city: "Louisville", state: "KY", ppm: 130 },
-  { city: "Baton Rouge", state: "LA", ppm: 120 },
-  { city: "New Orleans", state: "LA", ppm: 100 },
-  { city: "Shreveport", state: "LA", ppm: 45 },
-  { city: "Bangor", state: "ME", ppm: 18 },
-  { city: "Portland", state: "ME", ppm: 12 },
-  { city: "Baltimore", state: "MD", ppm: 80 },
-  { city: "Frederick", state: "MD", ppm: 120 },
-  { city: "Boston", state: "MA", ppm: 18 },
-  { city: "Cambridge", state: "MA", ppm: 18 },
-  { city: "Springfield", state: "MA", ppm: 15 },
-  { city: "Worcester", state: "MA", ppm: 20 },
-  { city: "Ann Arbor", state: "MI", ppm: 270 },
-  { city: "Detroit", state: "MI", ppm: 130 },
-  { city: "Grand Rapids", state: "MI", ppm: 300 },
-  { city: "Lansing", state: "MI", ppm: 340 },
-  { city: "Duluth", state: "MN", ppm: 55 },
-  { city: "Minneapolis", state: "MN", ppm: 170 },
-  { city: "Rochester", state: "MN", ppm: 350 },
-  { city: "St. Paul", state: "MN", ppm: 170 },
-  { city: "Jackson", state: "MS", ppm: 35 },
-  { city: "Columbia", state: "MO", ppm: 240 },
-  { city: "Kansas City", state: "MO", ppm: 120 },
-  { city: "Springfield", state: "MO", ppm: 300 },
-  { city: "St. Louis", state: "MO", ppm: 140 },
-  { city: "Billings", state: "MT", ppm: 180 },
-  { city: "Great Falls", state: "MT", ppm: 130 },
-  { city: "Missoula", state: "MT", ppm: 75 },
-  { city: "Lincoln", state: "NE", ppm: 200 },
-  { city: "Omaha", state: "NE", ppm: 150 },
-  { city: "Henderson", state: "NV", ppm: 270 },
-  { city: "Las Vegas", state: "NV", ppm: 274 },
-  { city: "Reno", state: "NV", ppm: 80 },
-  { city: "Concord", state: "NH", ppm: 15 },
-  { city: "Manchester", state: "NH", ppm: 18 },
-  { city: "Nashua", state: "NH", ppm: 20 },
-  { city: "Jersey City", state: "NJ", ppm: 60 },
-  { city: "Newark", state: "NJ", ppm: 50 },
-  { city: "Trenton", state: "NJ", ppm: 95 },
-  { city: "Albuquerque", state: "NM", ppm: 120 },
-  { city: "Las Cruces", state: "NM", ppm: 260 },
-  { city: "Santa Fe", state: "NM", ppm: 80 },
-  { city: "Albany", state: "NY", ppm: 45 },
-  { city: "Buffalo", state: "NY", ppm: 120 },
-  { city: "New York City", state: "NY", ppm: 25 },
-  { city: "Rochester", state: "NY", ppm: 130 },
-  { city: "Syracuse", state: "NY", ppm: 150 },
-  { city: "Yonkers", state: "NY", ppm: 25 },
-  { city: "Charlotte", state: "NC", ppm: 35 },
-  { city: "Durham", state: "NC", ppm: 50 },
-  { city: "Greensboro", state: "NC", ppm: 45 },
-  { city: "Raleigh", state: "NC", ppm: 48 },
-  { city: "Winston-Salem", state: "NC", ppm: 40 },
-  { city: "Bismarck", state: "ND", ppm: 220 },
-  { city: "Fargo", state: "ND", ppm: 250 },
-  { city: "Akron", state: "OH", ppm: 110 },
-  { city: "Cincinnati", state: "OH", ppm: 140 },
-  { city: "Cleveland", state: "OH", ppm: 120 },
-  { city: "Columbus", state: "OH", ppm: 150 },
-  { city: "Dayton", state: "OH", ppm: 300 },
-  { city: "Toledo", state: "OH", ppm: 130 },
-  { city: "Norman", state: "OK", ppm: 90 },
-  { city: "Oklahoma City", state: "OK", ppm: 95 },
-  { city: "Tulsa", state: "OK", ppm: 85 },
-  { city: "Eugene", state: "OR", ppm: 15 },
-  { city: "Portland", state: "OR", ppm: 10 },
-  { city: "Salem", state: "OR", ppm: 25 },
-  { city: "Allentown", state: "PA", ppm: 100 },
-  { city: "Harrisburg", state: "PA", ppm: 120 },
-  { city: "Philadelphia", state: "PA", ppm: 110 },
-  { city: "Pittsburgh", state: "PA", ppm: 130 },
-  { city: "Providence", state: "RI", ppm: 18 },
-  { city: "Charleston", state: "SC", ppm: 30 },
-  { city: "Columbia", state: "SC", ppm: 25 },
-  { city: "Greenville", state: "SC", ppm: 15 },
-  { city: "Rapid City", state: "SD", ppm: 200 },
-  { city: "Sioux Falls", state: "SD", ppm: 280 },
-  { city: "Chattanooga", state: "TN", ppm: 80 },
-  { city: "Knoxville", state: "TN", ppm: 60 },
-  { city: "Memphis", state: "TN", ppm: 65 },
-  { city: "Nashville", state: "TN", ppm: 110 },
-  { city: "Amarillo", state: "TX", ppm: 180 },
-  { city: "Arlington", state: "TX", ppm: 120 },
-  { city: "Austin", state: "TX", ppm: 200 },
-  { city: "Corpus Christi", state: "TX", ppm: 200 },
-  { city: "Dallas", state: "TX", ppm: 80 },
-  { city: "El Paso", state: "TX", ppm: 220 },
-  { city: "Fort Worth", state: "TX", ppm: 100 },
-  { city: "Houston", state: "TX", ppm: 140 },
-  { city: "Lubbock", state: "TX", ppm: 250 },
-  { city: "San Antonio", state: "TX", ppm: 300 },
-  { city: "Ogden", state: "UT", ppm: 250 },
-  { city: "Provo", state: "UT", ppm: 280 },
-  { city: "Salt Lake City", state: "UT", ppm: 220 },
-  { city: "St. George", state: "UT", ppm: 400 },
-  { city: "Burlington", state: "VT", ppm: 90 },
-  { city: "Montpelier", state: "VT", ppm: 35 },
-  { city: "Norfolk", state: "VA", ppm: 65 },
-  { city: "Richmond", state: "VA", ppm: 75 },
-  { city: "Virginia Beach", state: "VA", ppm: 60 },
-  { city: "Bellevue", state: "WA", ppm: 30 },
-  { city: "Seattle", state: "WA", ppm: 25 },
-  { city: "Spokane", state: "WA", ppm: 120 },
-  { city: "Tacoma", state: "WA", ppm: 22 },
-  { city: "Charleston", state: "WV", ppm: 110 },
-  { city: "Huntington", state: "WV", ppm: 120 },
-  { city: "Green Bay", state: "WI", ppm: 280 },
-  { city: "Madison", state: "WI", ppm: 320 },
-  { city: "Milwaukee", state: "WI", ppm: 140 },
-  { city: "Casper", state: "WY", ppm: 180 },
-  { city: "Cheyenne", state: "WY", ppm: 120 },
+// ── ZIP Code Water Hardness Database ──
+// Compact range format: [startPrefix, endPrefix, city, state, ppm]
+// Covers all US 3-digit ZIP prefixes with estimated water hardness (PPM)
+const ZIP_RANGES = [
+  // MA
+  [10,13,"Springfield","MA",15],[14,16,"Worcester","MA",20],[17,19,"Fall River","MA",18],
+  [20,24,"Boston","MA",18],[25,26,"Cape Cod","MA",15],
+  // RI
+  [27,29,"Providence","RI",18],
+  // NH
+  [30,34,"Manchester","NH",18],[35,38,"Concord","NH",15],
+  // ME
+  [39,39,"Portsmouth","NH",18],[40,41,"Portland","ME",12],[42,44,"Lewiston","ME",15],[45,49,"Bangor","ME",18],
+  // VT
+  [50,54,"White River Jct","VT",55],[55,59,"Burlington","VT",90],
+  // CT
+  [60,62,"Hartford","CT",25],[63,64,"New Haven","CT",22],[65,66,"Bridgeport","CT",30],[67,69,"Stamford","CT",35],
+  // NJ
+  [70,73,"Newark","NJ",50],[74,76,"Trenton","NJ",95],[77,79,"Red Bank","NJ",65],[80,84,"South Jersey","NJ",70],[85,89,"Jersey City","NJ",60],
+  // NY
+  [100,104,"New York City","NY",25],[105,109,"Yonkers","NY",25],[110,114,"Queens","NY",25],[115,119,"Long Island","NY",30],
+  [120,124,"Albany","NY",45],[125,129,"Poughkeepsie","NY",55],[130,134,"Syracuse","NY",150],[135,139,"Utica","NY",100],
+  [140,144,"Buffalo","NY",120],[145,149,"Rochester","NY",130],
+  // PA
+  [150,154,"Pittsburgh","PA",130],[155,159,"Johnstown","PA",120],[160,164,"Erie","PA",120],[165,169,"State College","PA",115],
+  [170,174,"Harrisburg","PA",120],[175,179,"Lancaster","PA",130],[180,184,"Allentown","PA",100],[185,189,"Scranton","PA",90],
+  [190,196,"Philadelphia","PA",110],
+  // DE
+  [197,199,"Wilmington","DE",95],
+  // DC / MD
+  [200,205,"Washington","DC",75],[206,209,"Southern MD","MD",80],[210,212,"Baltimore","MD",80],[213,219,"Frederick","MD",120],
+  // VA
+  [220,224,"Arlington","VA",70],[225,229,"Richmond","VA",75],[230,234,"Richmond","VA",75],[235,239,"Norfolk","VA",65],
+  [240,244,"Roanoke","VA",60],[245,246,"Lynchburg","VA",55],
+  // WV
+  [247,253,"Charleston","WV",110],[254,259,"Martinsburg","WV",115],[260,264,"Wheeling","WV",120],[265,268,"Clarksburg","WV",120],
+  // NC
+  [270,274,"Greensboro","NC",45],[275,279,"Raleigh","NC",48],[280,284,"Charlotte","NC",35],[285,289,"Fayetteville","NC",40],
+  // SC
+  [290,294,"Columbia","SC",25],[295,299,"Charleston","SC",30],
+  // GA
+  [300,303,"Atlanta","GA",30],[304,307,"Macon","GA",28],[308,312,"Augusta","GA",25],[313,316,"Savannah","GA",45],
+  [317,319,"Columbus","GA",22],[398,399,"Atlanta","GA",30],
+  // FL
+  [320,324,"Jacksonville","FL",240],[325,329,"Tallahassee","FL",160],[330,334,"Miami","FL",220],[335,339,"Tampa","FL",250],
+  [340,344,"Orlando","FL",170],[345,347,"West Palm Beach","FL",190],[348,349,"Fort Myers","FL",200],
+  // AL
+  [350,352,"Birmingham","AL",48],[353,356,"Tuscaloosa","AL",30],[357,359,"Huntsville","AL",100],
+  [360,362,"Montgomery","AL",55],[363,366,"Dothan","AL",40],[367,369,"Mobile","AL",40],
+  // TN
+  [370,374,"Nashville","TN",110],[375,377,"Chattanooga","TN",80],[378,381,"Knoxville","TN",60],[382,385,"Memphis","TN",65],
+  // MS
+  [386,389,"Jackson","MS",35],[390,393,"Hattiesburg","MS",30],[394,397,"Tupelo","MS",40],
+  // KY
+  [400,406,"Louisville","KY",130],[407,412,"Frankfort","KY",135],[413,418,"Lexington","KY",140],
+  [419,422,"Bowling Green","KY",125],[423,427,"Pikeville","KY",120],
+  // OH
+  [430,436,"Columbus","OH",150],[437,438,"Zanesville","OH",160],[439,441,"Cleveland","OH",120],
+  [442,443,"Akron","OH",110],[444,446,"Youngstown","OH",125],[447,449,"Canton","OH",140],
+  [450,455,"Cincinnati","OH",140],[456,458,"Dayton","OH",300],
+  // IN
+  [460,462,"Indianapolis","IN",290],[463,466,"Gary","IN",270],[467,469,"Fort Wayne","IN",280],
+  [470,472,"South Bend","IN",310],[473,476,"Terre Haute","IN",260],[477,479,"Evansville","IN",200],
+  // MI
+  [480,483,"Detroit","MI",130],[484,487,"Flint","MI",180],[488,491,"Lansing","MI",340],
+  [492,495,"Grand Rapids","MI",300],[496,499,"Traverse City","MI",270],
+  // IA
+  [500,503,"Des Moines","IA",220],[504,509,"Waterloo","IA",260],[510,514,"Sioux City","IA",240],
+  [515,519,"Ames","IA",250],[520,524,"Dubuque","IA",280],[525,528,"Cedar Rapids","IA",300],
+  // WI
+  [530,532,"Milwaukee","WI",140],[533,535,"Madison","WI",320],[536,539,"La Crosse","WI",250],
+  [540,544,"Wausau","WI",230],[545,549,"Green Bay","WI",280],
+  // MN
+  [550,553,"Minneapolis","MN",170],[554,557,"St. Paul","MN",170],[558,560,"Duluth","MN",55],
+  [561,564,"Mankato","MN",200],[565,567,"Rochester","MN",350],
+  // SD
+  [570,573,"Sioux Falls","SD",280],[574,577,"Rapid City","SD",200],
+  // ND
+  [580,583,"Fargo","ND",250],[584,588,"Bismarck","ND",220],
+  // MT
+  [590,593,"Billings","MT",180],[594,596,"Great Falls","MT",130],[597,599,"Missoula","MT",75],
+  // IL
+  [600,605,"Chicago","IL",140],[606,608,"Chicago Suburbs","IL",250],[609,612,"Kankakee","IL",260],
+  [613,616,"Peoria","IL",270],[617,619,"Champaign","IL",290],[620,623,"Springfield","IL",260],
+  [624,627,"Quincy","IL",280],[628,629,"Centralia","IL",250],
+  // MO
+  [630,631,"St. Louis","MO",140],[632,635,"Springfield","MO",300],[636,639,"Cape Girardeau","MO",200],
+  [640,643,"Kansas City","MO",120],[644,647,"Jefferson City","MO",220],[648,651,"Joplin","MO",250],
+  [652,655,"Columbia","MO",240],[656,658,"St. Joseph","MO",180],
+  // KS
+  [660,662,"Kansas City","KS",180],[663,666,"Topeka","KS",200],[667,670,"Wichita","KS",250],
+  [671,673,"Dodge City","KS",220],[674,676,"Salina","KS",210],[677,679,"Liberal","KS",230],
+  // NE
+  [680,683,"Omaha","NE",150],[684,687,"Lincoln","NE",200],[688,691,"Grand Island","NE",180],[692,693,"North Platte","NE",170],
+  // LA
+  [700,701,"New Orleans","LA",100],[702,705,"Baton Rouge","LA",120],[706,709,"Lake Charles","LA",80],[710,714,"Shreveport","LA",45],
+  // AR
+  [716,720,"Little Rock","AR",20],[721,724,"Pine Bluff","AR",30],[725,729,"Fayetteville","AR",50],
+  // OK
+  [730,731,"Oklahoma City","OK",95],[732,733,"Oklahoma City","OK",95],[734,738,"Tulsa","OK",85],
+  [739,741,"Lawton","OK",90],[742,742,"Enid","OK",95],[743,749,"Oklahoma City","OK",95],
+  // TX
+  [750,754,"Dallas","TX",80],[755,759,"Texarkana","TX",60],[760,764,"Fort Worth","TX",100],
+  [765,769,"Waco","TX",140],[770,774,"Houston","TX",140],[775,779,"Beaumont","TX",80],
+  [780,784,"San Antonio","TX",300],[785,789,"Austin","TX",200],[790,794,"Amarillo","TX",180],
+  [795,799,"El Paso","TX",220],
+  // CO
+  [800,804,"Denver","CO",70],[805,808,"Colorado Springs","CO",75],[809,812,"Pueblo","CO",65],[813,816,"Fort Collins","CO",55],
+  // WY
+  [820,824,"Cheyenne","WY",120],[825,828,"Casper","WY",180],[829,831,"Sheridan","WY",150],
+  // ID
+  [832,834,"Boise","ID",150],[835,836,"Idaho Falls","ID",200],[837,838,"Nampa","ID",180],
+  // UT
+  [840,842,"Salt Lake City","UT",220],[843,844,"Provo","UT",280],[845,846,"Ogden","UT",250],[847,847,"St. George","UT",400],
+  // AZ
+  [850,853,"Phoenix","AZ",232],[854,856,"Tucson","AZ",200],[857,859,"Flagstaff","AZ",150],
+  [860,863,"Mesa","AZ",250],[864,865,"Scottsdale","AZ",250],
+  // NM
+  [870,874,"Albuquerque","NM",120],[875,879,"Santa Fe","NM",80],[880,884,"Las Cruces","NM",260],
+  // NV
+  [889,891,"Las Vegas","NV",274],[893,895,"Reno","NV",80],[897,898,"Carson City","NV",90],
+  // CA
+  [900,905,"Los Angeles","CA",210],[906,908,"Whittier","CA",220],[910,912,"Pasadena","CA",230],
+  [913,916,"Santa Ana","CA",260],[917,918,"Anaheim","CA",250],[919,921,"San Diego","CA",250],
+  [922,925,"San Bernardino","CA",280],[926,928,"Riverside","CA",290],[930,933,"Santa Barbara","CA",350],
+  [934,935,"Bakersfield","CA",180],[936,938,"Fresno","CA",150],[939,941,"San Francisco","CA",30],
+  [942,944,"Sacramento","CA",50],[945,948,"Oakland","CA",40],[949,951,"San Jose","CA",180],
+  [952,954,"Stockton","CA",120],[955,958,"Eureka","CA",40],[959,961,"Irvine","CA",230],
+  // HI
+  [967,968,"Honolulu","HI",90],
+  // OR
+  [970,973,"Portland","OR",10],[974,975,"Eugene","OR",15],[976,979,"Salem","OR",25],
+  // WA
+  [980,983,"Seattle","WA",25],[984,986,"Tacoma","WA",22],[987,987,"Olympia","WA",20],
+  [988,989,"Spokane","WA",120],[990,992,"Bellevue","WA",30],[993,994,"Spokane Valley","WA",120],
+  // AK
+  [995,997,"Anchorage","AK",28],[998,999,"Fairbanks","AK",160]
 ];
+
+// Build lookup: 3-digit prefix → { city, state, ppm }
+const ZIP_DATA = {};
+ZIP_RANGES.forEach(([s, e, city, state, ppm]) => {
+  for (let i = s; i <= e; i++) {
+    ZIP_DATA[String(i).padStart(3, '0')] = { city, state, ppm };
+  }
+});
+
+// Build flat list for autocomplete (unique ranges)
+const ZIP_LIST = ZIP_RANGES.map(([s, e, city, state, ppm]) => ({
+  from: String(s).padStart(3, '0'),
+  to: String(e).padStart(3, '0'),
+  city, state, ppm
+}));
 
 // ── Tile Grid Map Positions ── [row, col]
 const TILE_POS = {
@@ -1007,7 +922,7 @@ const TILE_POS = {
 };
 
 // ── DOM Refs ──
-const citySearch = document.getElementById('citySearch');
+const zipSearch = document.getElementById('zipSearch');
 const autocompleteList = document.getElementById('autocompleteList');
 const ppmInput = document.getElementById('ppmInput');
 const hardnessDisplay = document.getElementById('hardnessDisplay');
@@ -1029,7 +944,6 @@ const tileMap = document.getElementById('tileMap');
 const mapCityLabel = document.getElementById('mapCityLabel');
 
 let selectedPPM = null;
-let selectedGrains = 300;
 let highlightedIndex = -1;
 
 // ── Build Tile Map ──
@@ -1050,12 +964,12 @@ function getHardnessTextColor(ppm) {
 }
 
 function buildMap() {
-  // Compute average PPM per state
+  // Compute average PPM per state from ZIP data
   const stateData = {};
-  CITIES.forEach(c => {
-    if (!stateData[c.state]) stateData[c.state] = { total: 0, count: 0 };
-    stateData[c.state].total += c.ppm;
-    stateData[c.state].count++;
+  Object.values(ZIP_DATA).forEach(d => {
+    if (!stateData[d.state]) stateData[d.state] = { total: 0, count: 0 };
+    stateData[d.state].total += d.ppm;
+    stateData[d.state].count++;
   });
 
   Object.entries(TILE_POS).forEach(([state, pos]) => {
@@ -1090,31 +1004,43 @@ function highlightState(stateCode, cityName, ppm) {
   mapCityLabel.textContent = cityName ? `📍 ${cityName} — ${ppm} PPM` : '';
 }
 
-// ── Autocomplete ──
-citySearch.addEventListener('input', function() {
-  const query = this.value.trim().toLowerCase();
+// ── ZIP Code Search ──
+zipSearch.addEventListener('input', function() {
+  const query = this.value.replace(/\D/g, ''); // digits only
+  this.value = query; // enforce digits
   highlightedIndex = -1;
+
   if (query.length < 2) {
     autocompleteList.classList.remove('active');
     return;
   }
-  const matches = CITIES.filter(c =>
-    c.city.toLowerCase().includes(query) ||
-    c.state.toLowerCase().includes(query) ||
-    `${c.city}, ${c.state}`.toLowerCase().includes(query)
-  ).slice(0, 15);
+
+  // Match ZIP ranges whose prefix overlaps with what the user typed
+  const matches = ZIP_LIST.filter(r => {
+    if (query.length <= 3) {
+      // partial prefix: check if any prefix in range starts with query
+      const qPad = query.padEnd(3, '0');
+      const qMax = query.padEnd(3, '9');
+      return r.to >= qPad && r.from <= qMax;
+    } else {
+      // 4-5 digit ZIP: match exact 3-digit prefix
+      const prefix = query.slice(0, 3);
+      return prefix >= r.from && prefix <= r.to;
+    }
+  }).slice(0, 15);
 
   if (matches.length === 0) {
     autocompleteList.classList.remove('active');
     return;
   }
 
-  autocompleteList.innerHTML = matches.map((m, i) =>
-    `<div class="autocomplete-item" data-index="${i}" data-ppm="${m.ppm}" data-state="${m.state}" data-city="${m.city}">
-      <span>${m.city}, ${m.state}</span>
+  autocompleteList.innerHTML = matches.map((m, i) => {
+    const rangeLabel = m.from === m.to ? `${m.from}xx` : `${m.from}xx–${m.to}xx`;
+    return `<div class="autocomplete-item" data-index="${i}" data-ppm="${m.ppm}" data-state="${m.state}" data-city="${m.city}" data-from="${m.from}">
+      <span>${rangeLabel} &nbsp; ${m.city}, ${m.state}</span>
       <span class="ppm-badge">${m.ppm} PPM</span>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
   autocompleteList.classList.add('active');
 
   autocompleteList.querySelectorAll('.autocomplete-item').forEach(item => {
@@ -1122,8 +1048,9 @@ citySearch.addEventListener('input', function() {
       const ppm = parseInt(this.dataset.ppm);
       const state = this.dataset.state;
       const city = this.dataset.city;
+      const prefix = this.dataset.from;
       const name = `${city}, ${state}`;
-      citySearch.value = name;
+      zipSearch.value = prefix.replace(/^0+/, '') || '0';
       ppmInput.value = ppm;
       selectedPPM = ppm;
       autocompleteList.classList.remove('active');
@@ -1132,9 +1059,23 @@ citySearch.addEventListener('input', function() {
       calculate();
     });
   });
+
+  // Auto-select if user typed 5 digits
+  if (query.length === 5) {
+    const prefix = query.slice(0, 3);
+    const data = ZIP_DATA[prefix];
+    if (data) {
+      ppmInput.value = data.ppm;
+      selectedPPM = data.ppm;
+      showHardnessInfo(data.ppm);
+      highlightState(data.state, `${data.city}, ${data.state}`, data.ppm);
+      autocompleteList.classList.remove('active');
+      calculate();
+    }
+  }
 });
 
-citySearch.addEventListener('keydown', function(e) {
+zipSearch.addEventListener('keydown', function(e) {
   const items = autocompleteList.querySelectorAll('.autocomplete-item');
   if (!autocompleteList.classList.contains('active') || items.length === 0) return;
 
@@ -1174,7 +1115,7 @@ ppmInput.addEventListener('input', function() {
     selectedPPM = val;
     showHardnessInfo(val);
     if (document.activeElement === ppmInput) {
-      citySearch.value = '';
+      zipSearch.value = '';
       highlightState(null);
     }
   } else {
@@ -1229,6 +1170,13 @@ function getFireplaceRowHTML(index) {
         <option value="5">5</option>
       </select>
     </div>
+    <div class="form-group fp-softener-group">
+      <label>Softener</label>
+      <select class="fp-softener">
+        <option value="300">300 grain</option>
+        <option value="700">700 grain</option>
+      </select>
+    </div>
     <button class="remove-btn" onclick="removeFireplace(this)" title="Remove">&times;</button>
   </div>`;
 }
@@ -1275,15 +1223,7 @@ function updateTotalSegments() {
   totalSegments.innerHTML = `Total 20" segments: <strong>${getTotalSegments()}</strong>`;
 }
 
-// ── Softener Selection ──
-function selectSoftener(el) {
-  document.querySelectorAll('.softener-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedGrains = parseInt(el.dataset.grains);
-  calculate();
-}
-
-// ── Calculation ──
+// ── Calculation (per-fireplace with individual softeners) ──
 function calculate() {
   const ppm = selectedPPM;
   if (!ppm || ppm <= 0) {
@@ -1295,55 +1235,78 @@ function calculate() {
   const hpd = parseFloat(hpdSlider.value);
   const dpw = parseFloat(dpwSlider.value);
   const wpm = 4.3;
-  const segments = getTotalSegments();
   const grpg = ppm / 17.1;
-  const capacity = selectedGrains;
 
-  const gallonsPerMonth = hpd * 0.025 * dpw * wpm * segments;
-  const grainsPerMonth = gallonsPerMonth * grpg;
-  const months = grainsPerMonth > 0 ? capacity / grainsPerMonth : Infinity;
+  const fpResults = [];
+  let overallMinMonths = Infinity;
+  let totalGallons = 0;
+  let totalGrains = 0;
+
+  fireplaceRows.querySelectorAll('.fireplace-row').forEach((row, idx) => {
+    const sizeVal = parseInt(row.querySelector('.fp-size').value);
+    const qty = parseInt(row.querySelector('.fp-qty').value);
+    const capacity = parseInt(row.querySelector('.fp-softener').value);
+    const segments = sizeVal * qty;
+    const sizeLabel = sizeVal === 1 ? '20"' : sizeVal === 2 ? '40"' : '60"';
+
+    const gallonsPerMonth = hpd * 0.025 * dpw * wpm * segments;
+    const grainsPerMonth = gallonsPerMonth * grpg;
+    const months = grainsPerMonth > 0 ? capacity / grainsPerMonth : Infinity;
+
+    totalGallons += gallonsPerMonth;
+    totalGrains += grainsPerMonth;
+
+    fpResults.push({ idx: idx + 1, sizeLabel, qty, segments, capacity, gallonsPerMonth, grainsPerMonth, months });
+    if (months < overallMinMonths) overallMinMonths = months;
+  });
 
   noResultCard.style.display = 'none';
   resultCard.classList.add('active');
 
-  let displayMonths, unitText;
-  if (months >= 120) {
-    displayMonths = (months / 12).toFixed(1);
+  // Display soonest replacement
+  let displayVal, unitText;
+  if (overallMinMonths >= 120) {
+    displayVal = (overallMinMonths / 12).toFixed(1);
     unitText = 'years';
   } else {
-    displayMonths = months.toFixed(1);
+    displayVal = overallMinMonths.toFixed(1);
     unitText = 'months';
   }
+  if (displayVal.endsWith('.0')) displayVal = displayVal.slice(0, -2);
 
-  if (displayMonths.endsWith('.0')) displayMonths = displayMonths.slice(0, -2);
+  resultMonths.textContent = displayVal;
+  resultUnit.textContent = fpResults.length > 1
+    ? `${unitText} until next replacement`
+    : `${unitText} before replacement`;
 
-  resultMonths.textContent = displayMonths;
-  resultUnit.textContent = `${unitText} before replacement`;
-
-  const fpDescription = buildFireplaceDescription();
-  resultBreakdown.innerHTML = `
+  // Build breakdown
+  let html = `
     <div class="row"><span class="label">Water hardness</span><span>${ppm} PPM (${grpg.toFixed(1)} GrPG)</span></div>
-    <div class="row"><span class="label">Fireplace setup</span><span>${fpDescription}</span></div>
-    <div class="row"><span class="label">Total segments</span><span>${segments}</span></div>
     <div class="row"><span class="label">Usage</span><span>${hpd} hrs/day, ${dpw} days/wk</span></div>
-    <div class="row"><span class="label">Capacity</span><span>${capacity} grains</span></div>
-    <div class="divider"></div>
-    <div class="row"><span class="label">Water/month</span><span>${gallonsPerMonth.toFixed(2)} gal</span></div>
-    <div class="row"><span class="label">Grains/month</span><span>${grainsPerMonth.toFixed(2)}</span></div>
-    <div class="divider"></div>
-    <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${displayMonths} ${unitText}</strong></span></div>
-  `;
-}
+    <div class="divider"></div>`;
 
-function buildFireplaceDescription() {
-  const parts = [];
-  fireplaceRows.querySelectorAll('.fireplace-row').forEach(row => {
-    const sizeVal = parseInt(row.querySelector('.fp-size').value);
-    const qty = parseInt(row.querySelector('.fp-qty').value);
-    const sizeLabel = sizeVal === 1 ? '20"' : sizeVal === 2 ? '40"' : '60"';
-    parts.push(`${qty}x${sizeLabel}`);
+  fpResults.forEach(fp => {
+    let fpDisplay, fpUnit;
+    if (fp.months >= 120) {
+      fpDisplay = (fp.months / 12).toFixed(1);
+      fpUnit = 'yr';
+    } else {
+      fpDisplay = fp.months.toFixed(1);
+      fpUnit = 'mo';
+    }
+    if (fpDisplay.endsWith('.0')) fpDisplay = fpDisplay.slice(0, -2);
+
+    html += `<div class="row"><span class="label">FP${fp.idx}: ${fp.qty}&times;${fp.sizeLabel} (${fp.capacity}g)</span><span><strong>${fpDisplay} ${fpUnit}</strong> &middot; ${fp.segments} seg &middot; ${fp.gallonsPerMonth.toFixed(1)} gal/mo</span></div>`;
   });
-  return parts.join(', ');
+
+  html += `<div class="divider"></div>
+    <div class="row"><span class="label">Total segments</span><span>${getTotalSegments()}</span></div>
+    <div class="row"><span class="label">Total water/month</span><span>${totalGallons.toFixed(2)} gal</span></div>
+    <div class="row"><span class="label">Total grains/month</span><span>${totalGrains.toFixed(2)}</span></div>
+    <div class="divider"></div>
+    <div class="row"><span class="label"><strong>${fpResults.length > 1 ? 'Soonest replacement' : 'Replace every'}</strong></span><span><strong>${displayVal} ${unitText}</strong></span></div>`;
+
+  resultBreakdown.innerHTML = html;
 }
 
 // ── Init ──
