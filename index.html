@@ -401,9 +401,9 @@
 
     .tile-map {
       display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      grid-template-rows: repeat(8, 1fr);
-      gap: 2px;
+      grid-template-columns: repeat(24, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+      gap: 1.5px;
       max-width: 100%;
     }
 
@@ -412,31 +412,32 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 3px;
-      font-size: 0.58rem;
+      border-radius: 2px;
+      font-size: 0.4rem;
       font-weight: 700;
-      cursor: default;
-      transition: transform 0.2s, box-shadow 0.2s;
-      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.1px;
       position: relative;
+      line-height: 1;
     }
 
     .state-tile:hover {
-      transform: scale(1.2);
+      transform: scale(1.15);
       z-index: 2;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
     }
 
     .state-tile.active {
-      box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--primary-dark);
-      transform: scale(1.15);
+      box-shadow: 0 0 0 1.5px white, 0 0 0 2.5px var(--primary-dark);
+      transform: scale(1.1);
       z-index: 3;
       animation: tilePulse 2s ease-in-out infinite;
     }
 
     @keyframes tilePulse {
-      0%, 100% { box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--primary-dark); }
-      50% { box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--primary-dark), 0 0 8px rgba(56,182,255,0.5); }
+      0%, 100% { box-shadow: 0 0 0 1.5px white, 0 0 0 2.5px var(--primary-dark); }
+      50% { box-shadow: 0 0 0 1.5px white, 0 0 0 2.5px var(--primary-dark), 0 0 6px rgba(56,182,255,0.5); }
     }
 
     .map-legend {
@@ -831,8 +832,8 @@
       input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; }
 
       /* ── Map ── */
-      .tile-map { gap: 2px; }
-      .state-tile { font-size: 0.55rem; border-radius: 2px; }
+      .tile-map { gap: 1px; }
+      .state-tile { font-size: 0.3rem; border-radius: 1.5px; letter-spacing: 0; }
       .map-legend { gap: 0.5rem; margin-top: 0.5rem; }
       .legend-item { font-size: 0.65rem; }
       .map-city-label { font-size: 0.75rem; }
@@ -884,8 +885,8 @@
         flex: 1 1 100%;
       }
 
-      .state-tile { font-size: 0.48rem; }
-      .tile-map { gap: 1.5px; }
+      .state-tile { font-size: 0.24rem; }
+      .tile-map { gap: 1px; }
       .hardness-bar-segment { font-size: 0.55rem; }
       .hardness-bar-labels { font-size: 0.58rem; }
 
@@ -1211,17 +1212,142 @@ const ZIP_LIST = ZIP_RANGES.map(([s, e, city, state, ppm]) => ({
   city, state, ppm
 }));
 
-// ── Tile Grid Map Positions ── [row, col]
-const TILE_POS = {
-  'AK':[0,0], 'ME':[0,11],
-  'VT':[1,9], 'NH':[1,10],
-  'WA':[2,1], 'MT':[2,2], 'ND':[2,3], 'MN':[2,4], 'WI':[2,5], 'MI':[2,7], 'NY':[2,8], 'MA':[2,9], 'CT':[2,10],
-  'OR':[3,1], 'ID':[3,2], 'WY':[3,3], 'SD':[3,4], 'IA':[3,5], 'IL':[3,6], 'IN':[3,7], 'OH':[3,8], 'PA':[3,9], 'NJ':[3,10], 'RI':[3,11],
-  'NV':[4,1], 'UT':[4,2], 'CO':[4,3], 'NE':[4,4], 'MO':[4,5], 'KY':[4,6], 'WV':[4,7], 'VA':[4,8], 'MD':[4,10], 'DE':[4,11],
-  'CA':[5,1], 'AZ':[5,3], 'NM':[5,4], 'KS':[5,5], 'AR':[5,6], 'TN':[5,7], 'NC':[5,8], 'SC':[5,9],
-  'OK':[6,5], 'LA':[6,6], 'MS':[6,7], 'AL':[6,8], 'GA':[6,9],
-  'HI':[7,1], 'TX':[7,4], 'FL':[7,9]
-};
+// ── Regional Tile Map ── [row, col, abbr, city, state, ppm]
+// 24-col x 16-row grid with ~180 city/metro-level tiles
+const REGION_TILES = [
+  // Alaska
+  [0,0,"ANC","Anchorage","AK",28],[0,1,"FBK","Fairbanks","AK",160],
+  // Maine
+  [0,22,"BAN","Bangor","ME",18],[0,23,"POR","Portland","ME",12],[1,22,"LEW","Lewiston","ME",15],
+  // Vermont
+  [2,18,"BUR","Burlington","VT",90],[2,19,"WRJ","White Rvr","VT",55],
+  // New Hampshire
+  [2,20,"MAN","Manchester","NH",18],[2,21,"CON","Concord","NH",15],
+  // Washington
+  [4,2,"SEA","Seattle","WA",25],[4,3,"SPO","Spokane","WA",120],
+  [5,2,"TAC","Tacoma","WA",22],[5,3,"OLY","Olympia","WA",20],
+  // Montana
+  [4,4,"GFL","Great Falls","MT",130],[4,5,"BIL","Billings","MT",180],[5,4,"MIS","Missoula","MT",75],
+  // North Dakota
+  [4,6,"BIS","Bismarck","ND",220],[4,7,"FAR","Fargo","ND",250],
+  // Minnesota
+  [4,8,"DUL","Duluth","MN",55],[4,9,"MPL","Minneapolis","MN",170],
+  [5,8,"MNK","Mankato","MN",200],[5,9,"ROC","Rochester","MN",350],
+  // Wisconsin
+  [4,10,"WAU","Wausau","WI",230],[4,11,"GBY","Green Bay","WI",280],
+  [5,10,"MAD","Madison","WI",320],[5,11,"MIL","Milwaukee","WI",140],
+  // Michigan
+  [4,14,"TVC","Traverse Cty","MI",270],[4,15,"FLN","Flint","MI",180],
+  [5,14,"GRR","Grand Rapids","MI",300],[5,15,"DET","Detroit","MI",130],
+  // New York
+  [4,16,"BUF","Buffalo","NY",120],[4,17,"SYR","Syracuse","NY",150],
+  [5,16,"ALB","Albany","NY",45],[5,17,"NYC","New York City","NY",25],
+  // Massachusetts
+  [4,18,"SPR","Springfield","MA",15],[4,19,"WOR","Worcester","MA",20],
+  [5,18,"BOS","Boston","MA",18],[5,19,"CCO","Cape Cod","MA",15],
+  // Connecticut
+  [4,20,"HFD","Hartford","CT",25],[4,21,"NHV","New Haven","CT",22],
+  [5,20,"BPT","Bridgeport","CT",30],[5,21,"STM","Stamford","CT",35],
+  // Oregon
+  [6,2,"PDX","Portland","OR",10],[6,3,"SLM","Salem","OR",25],[7,2,"EUG","Eugene","OR",15],
+  // Idaho
+  [6,4,"BOI","Boise","ID",150],[6,5,"IFL","Idaho Falls","ID",200],[7,4,"NMP","Nampa","ID",180],
+  // Wyoming
+  [6,6,"SHE","Sheridan","WY",150],[6,7,"CAS","Casper","WY",180],[7,6,"CHE","Cheyenne","WY",120],
+  // South Dakota
+  [6,8,"RAP","Rapid City","SD",200],[6,9,"SFD","Sioux Falls","SD",280],
+  // Iowa
+  [6,10,"SXC","Sioux City","IA",240],[6,11,"WTL","Waterloo","IA",260],
+  [7,10,"DSM","Des Moines","IA",220],[7,11,"CRA","Cedar Rapids","IA",300],
+  // Illinois
+  [6,12,"CHI","Chicago","IL",140],[6,13,"PIA","Peoria","IL",270],
+  [7,12,"SPI","Springfield","IL",260],[7,13,"CHM","Champaign","IL",290],
+  // Indiana
+  [6,14,"SBN","South Bend","IN",310],[6,15,"FWA","Fort Wayne","IN",280],
+  [7,14,"IND","Indianapolis","IN",290],[7,15,"EVV","Evansville","IN",200],
+  // Ohio
+  [6,16,"CLE","Cleveland","OH",120],[6,17,"YNG","Youngstown","OH",125],
+  [7,16,"CMH","Columbus","OH",150],[7,17,"CIN","Cincinnati","OH",140],
+  // Pennsylvania
+  [6,18,"ERI","Erie","PA",120],[6,19,"SCR","Scranton","PA",90],
+  [7,18,"PIT","Pittsburgh","PA",130],[7,19,"PHL","Philadelphia","PA",110],
+  // New Jersey
+  [6,20,"NWK","Newark","NJ",50],[6,21,"JCY","Jersey City","NJ",60],
+  [7,20,"TRN","Trenton","NJ",95],[7,21,"SNJ","S. Jersey","NJ",70],
+  // Rhode Island
+  [6,22,"PVD","Providence","RI",18],
+  // Nevada
+  [8,2,"RNO","Reno","NV",80],[8,3,"CSN","Carson City","NV",90],[9,2,"LAS","Las Vegas","NV",274],
+  // Utah
+  [8,4,"OGD","Ogden","UT",250],[8,5,"SLC","Salt Lake City","UT",220],
+  [9,4,"PVU","Provo","UT",280],[9,5,"SGU","St. George","UT",400],
+  // Colorado
+  [8,6,"FTC","Ft Collins","CO",55],[8,7,"DEN","Denver","CO",70],
+  [9,6,"COS","Colo. Spgs","CO",75],[9,7,"PUE","Pueblo","CO",65],
+  // Nebraska
+  [8,8,"NPL","N. Platte","NE",170],[8,9,"GRI","Grand Isl.","NE",180],
+  [9,8,"LNK","Lincoln","NE",200],[9,9,"OMA","Omaha","NE",150],
+  // Missouri
+  [8,10,"KCM","Kansas City","MO",120],[8,11,"STJ","St. Joseph","MO",180],
+  [9,10,"STL","St. Louis","MO",140],[9,11,"SGF","Springfield","MO",300],
+  // Kentucky
+  [8,12,"LEX","Lexington","KY",140],[8,13,"FRA","Frankfort","KY",135],
+  [9,12,"LOU","Louisville","KY",130],[9,13,"BWG","Bowling Grn","KY",125],
+  // West Virginia
+  [8,14,"WHL","Wheeling","WV",120],[8,15,"MBG","Martinsburg","WV",115],
+  [9,14,"CHS","Charleston","WV",110],[9,15,"CKB","Clarksburg","WV",120],
+  // Virginia
+  [8,16,"ARL","Arlington","VA",70],[8,17,"ROA","Roanoke","VA",60],
+  [9,16,"RIC","Richmond","VA",75],[9,17,"NFK","Norfolk","VA",65],
+  // Maryland + DC
+  [8,20,"BAL","Baltimore","MD",80],[8,21,"FRD","Frederick","MD",120],
+  [9,20,"WDC","Washington","DC",75],[9,21,"SMD","S. Maryland","MD",80],
+  // Delaware
+  [8,22,"WLM","Wilmington","DE",95],
+  // California (expanded)
+  [10,1,"EUR","Eureka","CA",40],[10,2,"SFO","San Francisco","CA",30],[10,3,"SAC","Sacramento","CA",50],
+  [11,1,"FRE","Fresno","CA",150],[11,2,"LAX","Los Angeles","CA",210],[11,3,"SAN","San Diego","CA",250],
+  // Arizona
+  [10,6,"FLG","Flagstaff","AZ",150],[10,7,"PHX","Phoenix","AZ",232],
+  [11,6,"TUS","Tucson","AZ",200],[11,7,"MSA","Mesa","AZ",250],
+  // New Mexico
+  [10,8,"SAF","Santa Fe","NM",80],[10,9,"ABQ","Albuquerque","NM",120],[11,8,"LCR","Las Cruces","NM",260],
+  // Kansas
+  [10,10,"TOP","Topeka","KS",200],[10,11,"KCK","Kansas City","KS",180],
+  [11,10,"ICT","Wichita","KS",250],[11,11,"DDC","Dodge City","KS",220],
+  // Arkansas
+  [10,12,"FAY","Fayetteville","AR",50],[10,13,"LRK","Little Rock","AR",20],[11,12,"PBF","Pine Bluff","AR",30],
+  // Tennessee
+  [10,14,"NSH","Nashville","TN",110],[10,15,"KNX","Knoxville","TN",60],
+  [11,14,"MEM","Memphis","TN",65],[11,15,"CHA","Chattanooga","TN",80],
+  // North Carolina
+  [10,16,"GBO","Greensboro","NC",45],[10,17,"RAL","Raleigh","NC",48],
+  [11,16,"CLT","Charlotte","NC",35],[11,17,"FAV","Fayetteville","NC",40],
+  // South Carolina
+  [10,18,"COL","Columbia","SC",25],[10,19,"CHL","Charleston","SC",30],
+  // Oklahoma
+  [12,10,"OKC","Okla City","OK",95],[12,11,"ENI","Enid","OK",95],
+  [13,10,"TUL","Tulsa","OK",85],[13,11,"LAW","Lawton","OK",90],
+  // Louisiana
+  [12,12,"SHV","Shreveport","LA",45],[12,13,"LCH","Lake Charles","LA",80],
+  [13,12,"BTR","Baton Rouge","LA",120],[13,13,"MSY","New Orleans","LA",100],
+  // Mississippi
+  [12,14,"TUP","Tupelo","MS",40],[12,15,"JAN","Jackson","MS",35],[13,14,"HTB","Hattiesburg","MS",30],
+  // Alabama
+  [12,16,"HSV","Huntsville","AL",100],[12,17,"BHM","Birmingham","AL",48],
+  [13,16,"MGM","Montgomery","AL",55],[13,17,"MOB","Mobile","AL",40],
+  // Georgia
+  [12,18,"ATL","Atlanta","GA",30],[12,19,"AUG","Augusta","GA",25],
+  [13,18,"MCN","Macon","GA",28],[13,19,"SAV","Savannah","GA",45],
+  // Hawaii
+  [14,2,"HNL","Honolulu","HI",90],
+  // Texas (expanded)
+  [14,7,"AMA","Amarillo","TX",180],[14,8,"DFW","Dallas","TX",80],[14,9,"HOU","Houston","TX",140],[14,10,"FTW","Fort Worth","TX",100],
+  [15,7,"ELP","El Paso","TX",220],[15,8,"SAT","San Antonio","TX",300],[15,9,"AUS","Austin","TX",200],[15,10,"WAC","Waco","TX",140],
+  // Florida (expanded)
+  [14,17,"TLH","Tallahassee","FL",160],[14,18,"JAX","Jacksonville","FL",240],[14,19,"ORL","Orlando","FL",170],
+  [15,17,"WPB","W Palm Bch","FL",190],[15,18,"TPA","Tampa","FL",250],[15,19,"MIA","Miami","FL",220]
+];
 
 // ── DOM Refs ──
 const zipSearch = document.getElementById('zipSearch');
@@ -1266,31 +1392,24 @@ function getHardnessTextColor(ppm) {
 }
 
 function buildMap() {
-  // Compute average PPM per state from ZIP data
-  const stateData = {};
-  Object.values(ZIP_DATA).forEach(d => {
-    if (!stateData[d.state]) stateData[d.state] = { total: 0, count: 0 };
-    stateData[d.state].total += d.ppm;
-    stateData[d.state].count++;
-  });
-
-  Object.entries(TILE_POS).forEach(([state, pos]) => {
+  REGION_TILES.forEach(([r, c, abbr, city, state, ppm]) => {
     const tile = document.createElement('div');
     tile.className = 'state-tile';
-    tile.id = 'tile-' + state;
-    tile.style.gridRow = pos[0] + 1;
-    tile.style.gridColumn = pos[1] + 1;
-    tile.textContent = state;
+    tile.dataset.state = state;
+    tile.dataset.city = city;
+    tile.dataset.ppm = ppm;
+    tile.style.gridRow = r + 1;
+    tile.style.gridColumn = c + 1;
+    tile.textContent = abbr;
+    tile.style.background = getHardnessColor(ppm);
+    tile.style.color = getHardnessTextColor(ppm);
 
-    const data = stateData[state];
-    const avgPpm = data ? Math.round(data.total / data.count) : null;
-    tile.style.background = getHardnessColor(avgPpm);
-    tile.style.color = getHardnessTextColor(avgPpm);
+    const label = ppm <= 60 ? 'Soft' : ppm <= 120 ? 'Moderate' : ppm <= 180 ? 'Hard' : 'Very Hard';
+    tile.title = `${city}, ${state}: ${ppm} PPM (${label})`;
 
-    if (avgPpm !== null) {
-      let label = avgPpm <= 60 ? 'Soft' : avgPpm <= 120 ? 'Moderate' : avgPpm <= 180 ? 'Hard' : 'Very Hard';
-      tile.title = `${state}: ~${avgPpm} PPM (${label})`;
-    }
+    tile.addEventListener('click', function() {
+      mapCityLabel.textContent = `📍 ${city}, ${state} — ${ppm} PPM (${label})`;
+    });
 
     tileMap.appendChild(tile);
   });
@@ -1298,10 +1417,11 @@ function buildMap() {
 
 function highlightState(stateCode, cityName, ppm) {
   document.querySelectorAll('.state-tile.active').forEach(t => t.classList.remove('active'));
-  const tile = document.getElementById('tile-' + stateCode);
-  if (tile) {
-    tile.classList.add('active');
-    tile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (stateCode) {
+    const tiles = document.querySelectorAll(`.state-tile[data-state="${stateCode}"]`);
+    tiles.forEach(t => t.classList.add('active'));
+    const firstTile = tiles[0];
+    if (firstTile) firstTile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   mapCityLabel.textContent = cityName ? `📍 ${cityName} — ${ppm} PPM` : '';
 }
