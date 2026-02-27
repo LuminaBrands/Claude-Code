@@ -401,8 +401,8 @@
 
     .tile-map {
       display: grid;
-      grid-template-columns: repeat(24, 1fr);
-      grid-template-rows: repeat(16, 1fr);
+      grid-template-columns: repeat(26, 1fr);
+      grid-template-rows: repeat(18, 1fr);
       gap: 1.5px;
       max-width: 100%;
     }
@@ -1213,140 +1213,143 @@ const ZIP_LIST = ZIP_RANGES.map(([s, e, city, state, ppm]) => ({
 }));
 
 // ── Regional Tile Map ── [row, col, abbr, city, state, ppm]
-// 24-col x 16-row grid with ~180 city/metro-level tiles
+// 26-col x 18-row grid with ~175 city/metro-level tiles
+// Arranged to approximate the geographic shape of the US
 const REGION_TILES = [
   // Alaska
   [0,0,"ANC","Anchorage","AK",28],[0,1,"FBK","Fairbanks","AK",160],
   // Maine
-  [0,22,"BAN","Bangor","ME",18],[0,23,"POR","Portland","ME",12],[1,22,"LEW","Lewiston","ME",15],
+  [1,24,"BAN","Bangor","ME",18],[1,25,"POR","Portland","ME",12],[2,24,"LEW","Lewiston","ME",15],
   // Vermont
-  [2,18,"BUR","Burlington","VT",90],[2,19,"WRJ","White Rvr","VT",55],
+  [2,21,"BUR","Burlington","VT",90],[3,21,"WRJ","White Rvr","VT",55],
   // New Hampshire
-  [2,20,"MAN","Manchester","NH",18],[2,21,"CON","Concord","NH",15],
+  [2,22,"MAN","Manchester","NH",18],[3,22,"CON","Concord","NH",15],
   // Washington
-  [4,2,"SEA","Seattle","WA",25],[4,3,"SPO","Spokane","WA",120],
-  [5,2,"TAC","Tacoma","WA",22],[5,3,"OLY","Olympia","WA",20],
+  [2,1,"SEA","Seattle","WA",25],[2,2,"SPO","Spokane","WA",120],
+  [3,1,"TAC","Tacoma","WA",22],[3,2,"OLY","Olympia","WA",20],
   // Montana
-  [4,4,"GFL","Great Falls","MT",130],[4,5,"BIL","Billings","MT",180],[5,4,"MIS","Missoula","MT",75],
+  [2,5,"GFL","Great Falls","MT",130],[2,6,"BIL","Billings","MT",180],[3,5,"MIS","Missoula","MT",75],
   // North Dakota
-  [4,6,"BIS","Bismarck","ND",220],[4,7,"FAR","Fargo","ND",250],
+  [2,8,"BIS","Bismarck","ND",220],[2,9,"FAR","Fargo","ND",250],
   // Minnesota
-  [4,8,"DUL","Duluth","MN",55],[4,9,"MPL","Minneapolis","MN",170],
-  [5,8,"MNK","Mankato","MN",200],[5,9,"ROC","Rochester","MN",350],
+  [2,11,"DUL","Duluth","MN",55],[2,12,"MPL","Minneapolis","MN",170],
+  [3,11,"MNK","Mankato","MN",200],[3,12,"ROC","Rochester","MN",350],
   // Wisconsin
-  [4,10,"WAU","Wausau","WI",230],[4,11,"GBY","Green Bay","WI",280],
-  [5,10,"MAD","Madison","WI",320],[5,11,"MIL","Milwaukee","WI",140],
+  [3,13,"WAU","Wausau","WI",230],[3,14,"GBY","Green Bay","WI",280],
+  [4,13,"MAD","Madison","WI",320],[4,14,"MIL","Milwaukee","WI",140],
   // Michigan
-  [4,14,"TVC","Traverse Cty","MI",270],[4,15,"FLN","Flint","MI",180],
-  [5,14,"GRR","Grand Rapids","MI",300],[5,15,"DET","Detroit","MI",130],
+  [3,16,"TVC","Traverse Cty","MI",270],[3,17,"FLN","Flint","MI",180],
+  [4,16,"GRR","Grand Rapids","MI",300],[4,17,"DET","Detroit","MI",130],
   // New York
-  [4,16,"BUF","Buffalo","NY",120],[4,17,"SYR","Syracuse","NY",150],
-  [5,16,"ALB","Albany","NY",45],[5,17,"NYC","New York City","NY",25],
+  [3,19,"BUF","Buffalo","NY",120],[3,20,"SYR","Syracuse","NY",150],
+  [4,19,"ALB","Albany","NY",45],[4,20,"NYC","New York City","NY",25],
   // Massachusetts
-  [4,18,"SPR","Springfield","MA",15],[4,19,"WOR","Worcester","MA",20],
-  [5,18,"BOS","Boston","MA",18],[5,19,"CCO","Cape Cod","MA",15],
+  [4,22,"SPR","Springfield","MA",15],[4,23,"WOR","Worcester","MA",20],
+  [5,22,"BOS","Boston","MA",18],[5,23,"CCO","Cape Cod","MA",15],
   // Connecticut
-  [4,20,"HFD","Hartford","CT",25],[4,21,"NHV","New Haven","CT",22],
-  [5,20,"BPT","Bridgeport","CT",30],[5,21,"STM","Stamford","CT",35],
-  // Oregon
-  [6,2,"PDX","Portland","OR",10],[6,3,"SLM","Salem","OR",25],[7,2,"EUG","Eugene","OR",15],
-  // Idaho
-  [6,4,"BOI","Boise","ID",150],[6,5,"IFL","Idaho Falls","ID",200],[7,4,"NMP","Nampa","ID",180],
-  // Wyoming
-  [6,6,"SHE","Sheridan","WY",150],[6,7,"CAS","Casper","WY",180],[7,6,"CHE","Cheyenne","WY",120],
-  // South Dakota
-  [6,8,"RAP","Rapid City","SD",200],[6,9,"SFD","Sioux Falls","SD",280],
-  // Iowa
-  [6,10,"SXC","Sioux City","IA",240],[6,11,"WTL","Waterloo","IA",260],
-  [7,10,"DSM","Des Moines","IA",220],[7,11,"CRA","Cedar Rapids","IA",300],
-  // Illinois
-  [6,12,"CHI","Chicago","IL",140],[6,13,"PIA","Peoria","IL",270],
-  [7,12,"SPI","Springfield","IL",260],[7,13,"CHM","Champaign","IL",290],
-  // Indiana
-  [6,14,"SBN","South Bend","IN",310],[6,15,"FWA","Fort Wayne","IN",280],
-  [7,14,"IND","Indianapolis","IN",290],[7,15,"EVV","Evansville","IN",200],
-  // Ohio
-  [6,16,"CLE","Cleveland","OH",120],[6,17,"YNG","Youngstown","OH",125],
-  [7,16,"CMH","Columbus","OH",150],[7,17,"CIN","Cincinnati","OH",140],
-  // Pennsylvania
-  [6,18,"ERI","Erie","PA",120],[6,19,"SCR","Scranton","PA",90],
-  [7,18,"PIT","Pittsburgh","PA",130],[7,19,"PHL","Philadelphia","PA",110],
-  // New Jersey
-  [6,20,"NWK","Newark","NJ",50],[6,21,"JCY","Jersey City","NJ",60],
-  [7,20,"TRN","Trenton","NJ",95],[7,21,"SNJ","S. Jersey","NJ",70],
+  [4,21,"HFD","Hartford","CT",25],[5,21,"NHV","New Haven","CT",22],
   // Rhode Island
-  [6,22,"PVD","Providence","RI",18],
+  [5,24,"PVD","Providence","RI",18],
+  // Oregon
+  [4,1,"PDX","Portland","OR",10],[4,2,"SLM","Salem","OR",25],[5,1,"EUG","Eugene","OR",15],
+  // Idaho
+  [4,4,"BOI","Boise","ID",150],[4,5,"IFL","Idaho Falls","ID",200],[5,4,"NMP","Nampa","ID",180],
+  // Wyoming
+  [4,6,"SHE","Sheridan","WY",150],[4,7,"CAS","Casper","WY",180],[5,6,"CHE","Cheyenne","WY",120],
+  // South Dakota
+  [4,8,"RAP","Rapid City","SD",200],[4,9,"SFD","Sioux Falls","SD",280],
+  // Iowa
+  [4,11,"SXC","Sioux City","IA",240],[4,12,"WTL","Waterloo","IA",260],
+  [5,11,"DSM","Des Moines","IA",220],[5,12,"CRA","Cedar Rapids","IA",300],
+  // Illinois
+  [5,13,"CHI","Chicago","IL",140],[5,14,"PIA","Peoria","IL",270],
+  [6,13,"SPI","Springfield","IL",260],[6,14,"CHM","Champaign","IL",290],
+  // Indiana
+  [5,15,"SBN","South Bend","IN",310],[5,16,"FWA","Fort Wayne","IN",280],
+  [6,15,"IND","Indianapolis","IN",290],[6,16,"EVV","Evansville","IN",200],
+  // Ohio
+  [5,17,"CLE","Cleveland","OH",120],[5,18,"YNG","Youngstown","OH",125],
+  [6,17,"CMH","Columbus","OH",150],[6,18,"CIN","Cincinnati","OH",140],
+  // Pennsylvania
+  [5,19,"ERI","Erie","PA",120],[5,20,"SCR","Scranton","PA",90],
+  [6,19,"PIT","Pittsburgh","PA",130],[6,20,"PHL","Philadelphia","PA",110],
+  // New Jersey
+  [6,21,"NWK","Newark","NJ",50],[6,22,"JCY","Jersey City","NJ",60],
+  [7,21,"TRN","Trenton","NJ",95],[7,22,"SNJ","S. Jersey","NJ",70],
   // Nevada
-  [8,2,"RNO","Reno","NV",80],[8,3,"CSN","Carson City","NV",90],[9,2,"LAS","Las Vegas","NV",274],
+  [7,3,"RNO","Reno","NV",80],[7,4,"CSN","Carson City","NV",90],[8,3,"LAS","Las Vegas","NV",274],
   // Utah
-  [8,4,"OGD","Ogden","UT",250],[8,5,"SLC","Salt Lake City","UT",220],
-  [9,4,"PVU","Provo","UT",280],[9,5,"SGU","St. George","UT",400],
+  [6,5,"OGD","Ogden","UT",250],[6,6,"SLC","Salt Lake City","UT",220],
+  [7,5,"PVU","Provo","UT",280],[7,6,"SGU","St. George","UT",400],
   // Colorado
-  [8,6,"FTC","Ft Collins","CO",55],[8,7,"DEN","Denver","CO",70],
-  [9,6,"COS","Colo. Spgs","CO",75],[9,7,"PUE","Pueblo","CO",65],
+  [6,7,"FTC","Ft Collins","CO",55],[6,8,"DEN","Denver","CO",70],
+  [7,7,"COS","Colo. Spgs","CO",75],[7,8,"PUE","Pueblo","CO",65],
   // Nebraska
-  [8,8,"NPL","N. Platte","NE",170],[8,9,"GRI","Grand Isl.","NE",180],
-  [9,8,"LNK","Lincoln","NE",200],[9,9,"OMA","Omaha","NE",150],
+  [6,9,"NPL","N. Platte","NE",170],[6,10,"GRI","Grand Isl.","NE",180],
+  [7,9,"LNK","Lincoln","NE",200],[7,10,"OMA","Omaha","NE",150],
   // Missouri
-  [8,10,"KCM","Kansas City","MO",120],[8,11,"STJ","St. Joseph","MO",180],
-  [9,10,"STL","St. Louis","MO",140],[9,11,"SGF","Springfield","MO",300],
+  [7,11,"KCM","Kansas City","MO",120],[7,12,"STJ","St. Joseph","MO",180],
+  [8,11,"STL","St. Louis","MO",140],[8,12,"SGF","Springfield","MO",300],
   // Kentucky
-  [8,12,"LEX","Lexington","KY",140],[8,13,"FRA","Frankfort","KY",135],
-  [9,12,"LOU","Louisville","KY",130],[9,13,"BWG","Bowling Grn","KY",125],
+  [7,15,"LEX","Lexington","KY",140],[7,16,"FRA","Frankfort","KY",135],
+  [8,15,"LOU","Louisville","KY",130],[8,16,"BWG","Bowling Grn","KY",125],
   // West Virginia
-  [8,14,"WHL","Wheeling","WV",120],[8,15,"MBG","Martinsburg","WV",115],
-  [9,14,"CHS","Charleston","WV",110],[9,15,"CKB","Clarksburg","WV",120],
+  [7,17,"WHL","Wheeling","WV",120],[7,18,"MBG","Martinsburg","WV",115],
+  [8,17,"CHS","Charleston","WV",110],[8,18,"CKB","Clarksburg","WV",120],
   // Virginia
-  [8,16,"ARL","Arlington","VA",70],[8,17,"ROA","Roanoke","VA",60],
-  [9,16,"RIC","Richmond","VA",75],[9,17,"NFK","Norfolk","VA",65],
+  [8,19,"ARL","Arlington","VA",70],[8,20,"ROA","Roanoke","VA",60],
+  [9,19,"RIC","Richmond","VA",75],[9,20,"NFK","Norfolk","VA",65],
   // Maryland + DC
-  [8,20,"BAL","Baltimore","MD",80],[8,21,"FRD","Frederick","MD",120],
-  [9,20,"WDC","Washington","DC",75],[9,21,"SMD","S. Maryland","MD",80],
+  [7,23,"BAL","Baltimore","MD",80],[7,24,"FRD","Frederick","MD",120],
+  [8,23,"WDC","Washington","DC",75],[8,24,"SMD","S. Maryland","MD",80],
   // Delaware
-  [8,22,"WLM","Wilmington","DE",95],
-  // California (expanded)
-  [10,1,"EUR","Eureka","CA",40],[10,2,"SFO","San Francisco","CA",30],[10,3,"SAC","Sacramento","CA",50],
-  [11,1,"FRE","Fresno","CA",150],[11,2,"LAX","Los Angeles","CA",210],[11,3,"SAN","San Diego","CA",250],
+  [8,25,"WLM","Wilmington","DE",95],
+  // California (vertical along coast)
+  [6,1,"EUR","Eureka","CA",40],[7,1,"SFO","San Francisco","CA",30],[7,2,"SAC","Sacramento","CA",50],
+  [8,1,"FRE","Fresno","CA",150],[9,1,"LAX","Los Angeles","CA",210],[9,2,"SAN","San Diego","CA",250],
   // Arizona
-  [10,6,"FLG","Flagstaff","AZ",150],[10,7,"PHX","Phoenix","AZ",232],
-  [11,6,"TUS","Tucson","AZ",200],[11,7,"MSA","Mesa","AZ",250],
+  [8,4,"FLG","Flagstaff","AZ",150],[8,5,"PHX","Phoenix","AZ",232],
+  [9,4,"TUS","Tucson","AZ",200],[9,5,"MSA","Mesa","AZ",250],
   // New Mexico
-  [10,8,"SAF","Santa Fe","NM",80],[10,9,"ABQ","Albuquerque","NM",120],[11,8,"LCR","Las Cruces","NM",260],
+  [8,6,"SAF","Santa Fe","NM",80],[8,7,"ABQ","Albuquerque","NM",120],[9,6,"LCR","Las Cruces","NM",260],
   // Kansas
-  [10,10,"TOP","Topeka","KS",200],[10,11,"KCK","Kansas City","KS",180],
-  [11,10,"ICT","Wichita","KS",250],[11,11,"DDC","Dodge City","KS",220],
+  [8,9,"TOP","Topeka","KS",200],[8,10,"KCK","Kansas City","KS",180],
+  [9,9,"ICT","Wichita","KS",250],[9,10,"DDC","Dodge City","KS",220],
   // Arkansas
-  [10,12,"FAY","Fayetteville","AR",50],[10,13,"LRK","Little Rock","AR",20],[11,12,"PBF","Pine Bluff","AR",30],
+  [9,11,"FAY","Fayetteville","AR",50],[9,12,"LRK","Little Rock","AR",20],[10,11,"PBF","Pine Bluff","AR",30],
   // Tennessee
-  [10,14,"NSH","Nashville","TN",110],[10,15,"KNX","Knoxville","TN",60],
-  [11,14,"MEM","Memphis","TN",65],[11,15,"CHA","Chattanooga","TN",80],
+  [9,15,"NSH","Nashville","TN",110],[9,16,"KNX","Knoxville","TN",60],
+  [10,15,"MEM","Memphis","TN",65],[10,16,"CHA","Chattanooga","TN",80],
   // North Carolina
-  [10,16,"GBO","Greensboro","NC",45],[10,17,"RAL","Raleigh","NC",48],
-  [11,16,"CLT","Charlotte","NC",35],[11,17,"FAV","Fayetteville","NC",40],
+  [10,19,"GBO","Greensboro","NC",45],[10,20,"RAL","Raleigh","NC",48],
+  [11,19,"CLT","Charlotte","NC",35],[11,20,"FAV","Fayetteville","NC",40],
   // South Carolina
-  [10,18,"COL","Columbia","SC",25],[10,19,"CHL","Charleston","SC",30],
+  [11,21,"COL","Columbia","SC",25],[12,21,"CHL","Charleston","SC",30],
   // Oklahoma
-  [12,10,"OKC","Okla City","OK",95],[12,11,"ENI","Enid","OK",95],
-  [13,10,"TUL","Tulsa","OK",85],[13,11,"LAW","Lawton","OK",90],
+  [10,9,"OKC","Okla City","OK",95],[10,10,"ENI","Enid","OK",95],
+  [11,9,"TUL","Tulsa","OK",85],[11,10,"LAW","Lawton","OK",90],
   // Louisiana
-  [12,12,"SHV","Shreveport","LA",45],[12,13,"LCH","Lake Charles","LA",80],
-  [13,12,"BTR","Baton Rouge","LA",120],[13,13,"MSY","New Orleans","LA",100],
+  [11,11,"SHV","Shreveport","LA",45],[11,12,"LCH","Lake Charles","LA",80],
+  [12,11,"BTR","Baton Rouge","LA",120],[12,12,"MSY","New Orleans","LA",100],
   // Mississippi
-  [12,14,"TUP","Tupelo","MS",40],[12,15,"JAN","Jackson","MS",35],[13,14,"HTB","Hattiesburg","MS",30],
+  [11,15,"TUP","Tupelo","MS",40],[11,16,"JAN","Jackson","MS",35],[12,15,"HTB","Hattiesburg","MS",30],
   // Alabama
-  [12,16,"HSV","Huntsville","AL",100],[12,17,"BHM","Birmingham","AL",48],
-  [13,16,"MGM","Montgomery","AL",55],[13,17,"MOB","Mobile","AL",40],
+  [11,17,"HSV","Huntsville","AL",100],[11,18,"BHM","Birmingham","AL",48],
+  [12,17,"MGM","Montgomery","AL",55],[12,18,"MOB","Mobile","AL",40],
   // Georgia
-  [12,18,"ATL","Atlanta","GA",30],[12,19,"AUG","Augusta","GA",25],
+  [12,19,"ATL","Atlanta","GA",30],[12,20,"AUG","Augusta","GA",25],
   [13,18,"MCN","Macon","GA",28],[13,19,"SAV","Savannah","GA",45],
   // Hawaii
-  [14,2,"HNL","Honolulu","HI",90],
-  // Texas (expanded)
-  [14,7,"AMA","Amarillo","TX",180],[14,8,"DFW","Dallas","TX",80],[14,9,"HOU","Houston","TX",140],[14,10,"FTW","Fort Worth","TX",100],
-  [15,7,"ELP","El Paso","TX",220],[15,8,"SAT","San Antonio","TX",300],[15,9,"AUS","Austin","TX",200],[15,10,"WAC","Waco","TX",140],
-  // Florida (expanded)
-  [14,17,"TLH","Tallahassee","FL",160],[14,18,"JAX","Jacksonville","FL",240],[14,19,"ORL","Orlando","FL",170],
-  [15,17,"WPB","W Palm Bch","FL",190],[15,18,"TPA","Tampa","FL",250],[15,19,"MIA","Miami","FL",220]
+  [16,1,"HNL","Honolulu","HI",90],
+  // Texas (wide shape)
+  [11,7,"AMA","Amarillo","TX",180],
+  [12,5,"ELP","El Paso","TX",220],[12,6,"DFW","Dallas","TX",80],[12,7,"FTW","Fort Worth","TX",100],[12,8,"WAC","Waco","TX",140],
+  [13,6,"SAT","San Antonio","TX",300],[13,7,"AUS","Austin","TX",200],[13,8,"HOU","Houston","TX",140],
+  // Florida (vertical peninsula)
+  [13,20,"TLH","Tallahassee","FL",160],[13,21,"JAX","Jacksonville","FL",240],
+  [14,21,"ORL","Orlando","FL",170],
+  [15,20,"TPA","Tampa","FL",250],[15,21,"WPB","W Palm Bch","FL",190],
+  [16,21,"MIA","Miami","FL",220]
 ];
 
 // ── DOM Refs ──
