@@ -737,6 +737,28 @@
       position: relative;
     }
 
+    /* ── 12-Month Warning ── */
+    .replace-warning {
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.9rem;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 10px;
+      color: #92400e;
+      font-size: 0.82rem;
+      font-weight: 500;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .replace-warning .warn-icon {
+      flex-shrink: 0;
+      font-size: 1.1rem;
+      line-height: 1.3;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .bento-grid {
@@ -1504,11 +1526,15 @@ function calculate() {
     const fp = fpResults[0];
     const { val: displayVal, unit: unitText } = formatDuration(fp.months);
 
+    const singleWarning = fp.months > 12
+      ? `<div class="replace-warning"><span class="warn-icon">&#9888;</span><span>Based on your usage the softener capacity lasts beyond 12 months, but <strong>we recommend replacing the softener at least once every 12 months</strong> to ensure optimal water quality and appliance protection.</span></div>`
+      : '';
+
     resultContainer.innerHTML = `
       <div class="result-inner active">
         <div class="result-label">Estimated time before replacement</div>
-        <div class="result-value">${displayVal}</div>
-        <div class="result-unit">${unitText}</div>
+        <div class="result-value">${fp.months > 12 ? 12 : displayVal}</div>
+        <div class="result-unit">${fp.months > 12 ? 'months (max)' : unitText}</div>
         <div class="result-breakdown">
           <div class="row"><span class="label">Water hardness</span><span>${ppm} PPM (${grpg.toFixed(1)} GrPG)</span></div>
           <div class="row"><span class="label">Usage</span><span>${hpd} hrs/day, ${dpw} days/wk</span></div>
@@ -1517,22 +1543,26 @@ function calculate() {
           <div class="row"><span class="label">Water per month</span><span>${fp.gallonsPerMonth.toFixed(2)} gal</span></div>
           <div class="row"><span class="label">Grains per month</span><span>${fp.grainsPerMonth.toFixed(2)}</span></div>
           <div class="divider"></div>
-          <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${displayVal} ${unitText}</strong></span></div>
+          <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${fp.months > 12 ? '12 months (max)' : displayVal + ' ' + unitText}</strong></span></div>
         </div>
+        ${singleWarning}
       </div>`;
   } else {
     // Multiple configurations — independent side-by-side cards
     let cardsHtml = '<div class="results-grid">';
 
+    let anyOver12 = false;
     fpResults.forEach(fp => {
       const { val: fpVal, unit: fpUnit } = formatDuration(fp.months);
+      const capped = fp.months > 12;
+      if (capped) anyOver12 = true;
 
       cardsHtml += `
         <div class="result-inner active">
           <div class="result-config-label">Fireplace ${fp.idx}</div>
           <div class="result-label">Replace softener in</div>
-          <div class="result-value">${fpVal}</div>
-          <div class="result-unit">${fpUnit}</div>
+          <div class="result-value">${capped ? 12 : fpVal}</div>
+          <div class="result-unit">${capped ? 'months (max)' : fpUnit}</div>
           <div class="result-breakdown">
             <div class="row"><span class="label">Size</span><span>${fp.qty}&times;${fp.sizeLabel}</span></div>
             <div class="row"><span class="label">Segments</span><span>${fp.segments}</span></div>
@@ -1541,19 +1571,24 @@ function calculate() {
             <div class="row"><span class="label">Water/month</span><span>${fp.gallonsPerMonth.toFixed(2)} gal</span></div>
             <div class="row"><span class="label">Grains/month</span><span>${fp.grainsPerMonth.toFixed(2)}</span></div>
             <div class="divider"></div>
-            <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${fpVal} ${fpUnit}</strong></span></div>
+            <div class="row"><span class="label"><strong>Replace every</strong></span><span><strong>${capped ? '12 months (max)' : fpVal + ' ' + fpUnit}</strong></span></div>
           </div>
         </div>`;
     });
 
     cardsHtml += '</div>';
 
-    // Summary bar
-    const { val: summaryVal, unit: summaryUnit } = formatDuration(overallMinMonths);
+    // Summary bar — cap soonest replacement at 12 months too
+    const cappedOverallMonths = overallMinMonths > 12 ? 12 : overallMinMonths;
+    const { val: summaryVal, unit: summaryUnit } = formatDuration(cappedOverallMonths);
     cardsHtml += `
       <div class="results-summary">
-        <span>&#9201; Soonest replacement: <strong>${summaryVal} ${summaryUnit}</strong> &nbsp;|&nbsp; Water hardness: ${ppm} PPM &nbsp;|&nbsp; Usage: ${hpd} hrs/day, ${dpw} days/wk</span>
+        <span>&#9201; Soonest replacement: <strong>${summaryVal} ${summaryUnit}${overallMinMonths > 12 ? ' (max)' : ''}</strong> &nbsp;|&nbsp; Water hardness: ${ppm} PPM &nbsp;|&nbsp; Usage: ${hpd} hrs/day, ${dpw} days/wk</span>
       </div>`;
+
+    if (anyOver12) {
+      cardsHtml += `<div class="replace-warning"><span class="warn-icon">&#9888;</span><span>One or more configurations show a softener capacity lasting beyond 12 months, but <strong>we recommend replacing every softener at least once every 12 months</strong> to ensure optimal water quality and appliance protection.</span></div>`;
+    }
 
     resultContainer.innerHTML = cardsHtml;
   }
