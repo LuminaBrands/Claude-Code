@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-Show less
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vapor Pure - Water Softener Replacement Calculator</title>
@@ -133,12 +132,9 @@ Show less
       font-weight: 700;
       flex-shrink: 0;
     }
-Bash
-sed -n '151,340p' /home/user/index.html
-.card-title .icon {
+    .card-title .icon {
       font-size: 1rem;
     }
-Show less
     /* ── Form Elements ── */
     .form-group { margin-bottom: 0.85rem; }
     .form-group:last-child { margin-bottom: 0; }
@@ -300,12 +296,9 @@ Show less
     }
     .state-tile.active {
       box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--primary-dark);
-Bash
-sed -n '341,530p' /home/user/index.html
-transform: scale(1.15);
+      transform: scale(1.15);
       z-index: 3;
       animation: tilePulse 2s ease-in-out infinite;
-Show less
     }
     @keyframes tilePulse {
       0%, 100% { box-shadow: 0 0 0 2px white, 0 0 0 3.5px var(--primary-dark); }
@@ -467,12 +460,9 @@ Show less
     .result-area .no-result {
       text-align: center;
       padding: 1rem;
-Bash
-sed -n '531,720p' /home/user/index.html
-color: var(--text-light);
+      color: var(--text-light);
       font-size: 0.88rem;
     }
-Show less
     .result-inner {
       display: none;
       text-align: center;
@@ -642,12 +632,9 @@ Show less
           </div>
           <div class="form-group">
             <label>Quantity</label>
-Bash
-sed -n '721,910p' /home/user/index.html
-<select class="fp-qty">
+            <select class="fp-qty">
               <option value="1">1</option>
               <option value="2">2</option>
-Show less
               <option value="3">3</option>
               <option value="4">4</option>
               <option value="5">5</option>
@@ -830,12 +817,9 @@ const CITIES = [
   { city: "St. Louis", state: "MO", ppm: 140 },
   { city: "Billings", state: "MT", ppm: 180 },
   { city: "Great Falls", state: "MT", ppm: 130 },
-Bash
-sed -n '911,1100p' /home/user/index.html
-{ city: "Missoula", state: "MT", ppm: 75 },
+  { city: "Missoula", state: "MT", ppm: 75 },
   { city: "Lincoln", state: "NE", ppm: 200 },
   { city: "Omaha", state: "NE", ppm: 150 },
-Show less
   { city: "Henderson", state: "NV", ppm: 270 },
   { city: "Las Vegas", state: "NV", ppm: 274 },
   { city: "Reno", state: "NV", ppm: 80 },
@@ -1011,12 +995,9 @@ citySearch.addEventListener('input', function() {
     autocompleteList.classList.remove('active');
     return;
   }
-Bash
-sed -n '1101,1357p' /home/user/index.html
-const matches = CITIES.filter(c =>
+  const matches = CITIES.filter(c =>
     c.city.toLowerCase().includes(query) ||
     c.state.toLowerCase().includes(query) ||
-Show less
     `${c.city}, ${c.state}`.toLowerCase().includes(query)
   ).slice(0, 15);
   if (matches.length === 0) {
