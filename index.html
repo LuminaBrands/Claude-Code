@@ -936,9 +936,9 @@
         Water Hardness
       </div>
       <div class="form-group">
-        <label>Search by ZIP code <span class="hint">(enter your ZIP)</span></label>
+        <label>Search by ZIP code or city <span class="hint">(start typing)</span></label>
         <div class="search-wrapper">
-          <input type="text" id="zipSearch" placeholder="e.g. 85001" autocomplete="off" maxlength="5" inputmode="numeric">
+          <input type="text" id="zipSearch" placeholder="e.g. 85001 or Phoenix" autocomplete="off">
           <span class="search-icon">&#128269;</span>
           <div class="autocomplete-list" id="autocompleteList"></div>
         </div>
@@ -1235,6 +1235,18 @@ const ZIP_LIST = ZIP_RANGES.map(([s, e, city, state, ppm]) => ({
   city, state, ppm
 }));
 
+// Build deduplicated city list for city search (unique city+state combos)
+const CITY_LIST = [];
+const citySet = new Set();
+ZIP_RANGES.forEach(([s, e, city, state, ppm]) => {
+  const key = city + ',' + state;
+  if (!citySet.has(key)) {
+    citySet.add(key);
+    CITY_LIST.push({ city, state, ppm, zip: String(s).padStart(3, '0') });
+  }
+});
+CITY_LIST.sort((a, b) => a.city.localeCompare(b.city));
+
 // ── Regional Tile Map ── [row, col, abbr, city, state, ppm]
 // 26-col x 18-row grid with ~175 city/metro-level tiles
 // Arranged to approximate the geographic shape of the US
@@ -1489,43 +1501,76 @@ function highlightState(stateCode, cityName, ppm) {
   mapCityLabel.textContent = cityName ? `📍 ${cityName} — ${ppm} PPM` : '';
 }
 
-// ── ZIP Code Search ──
+// ── ZIP / City Search ──
 zipSearch.addEventListener('input', function() {
-  const query = this.value.replace(/\D/g, ''); // digits only
-  this.value = query; // enforce digits
+  const raw = this.value;
   highlightedIndex = -1;
 
-  if (query.length < 2) {
+  // Detect if input looks like a ZIP (digits only) or a city name
+  const isZip = /^\d+$/.test(raw.trim());
+
+  if (raw.trim().length < 2) {
     autocompleteList.classList.remove('active');
     return;
   }
 
-  // Match ZIP ranges whose prefix overlaps with what the user typed
-  const matches = ZIP_LIST.filter(r => {
-    if (query.length <= 3) {
-      // partial prefix: check if any prefix in range starts with query
-      const qPad = query.padEnd(3, '0');
-      const qMax = query.padEnd(3, '9');
-      return r.to >= qPad && r.from <= qMax;
-    } else {
-      // 4-5 digit ZIP: match exact 3-digit prefix
+  let matches;
+
+  if (isZip) {
+    const query = raw.trim();
+    // Match ZIP ranges whose prefix overlaps with what the user typed
+    matches = ZIP_LIST.filter(r => {
+      if (query.length <= 3) {
+        const qPad = query.padEnd(3, '0');
+        const qMax = query.padEnd(3, '9');
+        return r.to >= qPad && r.from <= qMax;
+      } else {
+        const prefix = query.slice(0, 3);
+        return prefix >= r.from && prefix <= r.to;
+      }
+    }).slice(0, 15).map(m => ({
+      label: (m.from === m.to ? `${m.from}xx` : `${m.from}xx–${m.to}xx`) + ` \u00A0 ${m.city}, ${m.state}`,
+      city: m.city, state: m.state, ppm: m.ppm, zip: m.from
+    }));
+
+    // Auto-select if user typed 5 digits
+    if (query.length === 5) {
       const prefix = query.slice(0, 3);
-      return prefix >= r.from && prefix <= r.to;
+      const data = ZIP_DATA[prefix];
+      if (data) {
+        ppmInput.value = data.ppm;
+        selectedPPM = data.ppm;
+        showHardnessInfo(data.ppm);
+        showCityName(data.city, data.state);
+        highlightState(data.state, `${data.city}, ${data.state}`, data.ppm);
+        autocompleteList.classList.remove('active');
+        calculate();
+        return;
+      }
     }
-  }).slice(0, 15);
+  } else {
+    // City name search - match against CITY_LIST
+    const q = raw.trim().toLowerCase();
+    matches = CITY_LIST.filter(c => {
+      const full = (c.city + ', ' + c.state).toLowerCase();
+      return full.includes(q);
+    }).slice(0, 15).map(c => ({
+      label: `${c.city}, ${c.state}`,
+      city: c.city, state: c.state, ppm: c.ppm, zip: c.zip
+    }));
+  }
 
   if (matches.length === 0) {
     autocompleteList.classList.remove('active');
     return;
   }
 
-  autocompleteList.innerHTML = matches.map((m, i) => {
-    const rangeLabel = m.from === m.to ? `${m.from}xx` : `${m.from}xx–${m.to}xx`;
-    return `<div class="autocomplete-item" data-index="${i}" data-ppm="${m.ppm}" data-state="${m.state}" data-city="${m.city}" data-from="${m.from}">
-      <span>${rangeLabel} &nbsp; ${m.city}, ${m.state}</span>
+  autocompleteList.innerHTML = matches.map((m, i) =>
+    `<div class="autocomplete-item" data-index="${i}" data-ppm="${m.ppm}" data-state="${m.state}" data-city="${m.city}" data-zip="${m.zip}">
+      <span>${m.label}</span>
       <span class="ppm-badge">${m.ppm} PPM</span>
-    </div>`;
-  }).join('');
+    </div>`
+  ).join('');
   autocompleteList.classList.add('active');
 
   autocompleteList.querySelectorAll('.autocomplete-item').forEach(item => {
@@ -1533,9 +1578,8 @@ zipSearch.addEventListener('input', function() {
       const ppm = parseInt(this.dataset.ppm);
       const state = this.dataset.state;
       const city = this.dataset.city;
-      const prefix = this.dataset.from;
       const name = `${city}, ${state}`;
-      zipSearch.value = prefix.replace(/^0+/, '') || '0';
+      zipSearch.value = name;
       ppmInput.value = ppm;
       selectedPPM = ppm;
       autocompleteList.classList.remove('active');
@@ -1545,21 +1589,6 @@ zipSearch.addEventListener('input', function() {
       calculate();
     });
   });
-
-  // Auto-select if user typed 5 digits
-  if (query.length === 5) {
-    const prefix = query.slice(0, 3);
-    const data = ZIP_DATA[prefix];
-    if (data) {
-      ppmInput.value = data.ppm;
-      selectedPPM = data.ppm;
-      showHardnessInfo(data.ppm);
-      showCityName(data.city, data.state);
-      highlightState(data.state, `${data.city}, ${data.state}`, data.ppm);
-      autocompleteList.classList.remove('active');
-      calculate();
-    }
-  }
 });
 
 zipSearch.addEventListener('keydown', function(e) {
