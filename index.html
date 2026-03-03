@@ -504,6 +504,14 @@
       margin-bottom: 0;
     }
 
+    .fireplace-row .fp-per-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-light);
+      padding-bottom: 0.55rem;
+      flex-shrink: 0;
+    }
+
     .fireplace-row .remove-btn {
       padding: 0.55rem 0.65rem;
       background: #fef2f2;
@@ -817,6 +825,12 @@
         min-width: 0;
       }
 
+      .fireplace-row .fp-per-label {
+        flex: 0 0 auto;
+        padding-bottom: 0.3rem;
+        font-size: 0.72rem;
+      }
+
       .fireplace-row .fp-softener-group {
         flex: 1 1 calc(50% - 2rem);
       }
@@ -1013,7 +1027,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Quantity</label>
+            <label>Fireplace Quantity</label>
             <select class="fp-qty">
               <option value="1">1</option>
               <option value="2">2</option>
@@ -1022,6 +1036,7 @@
               <option value="5">5</option>
             </select>
           </div>
+          <span class="fp-per-label">per</span>
           <div class="form-group fp-softener-group">
             <label>Softener</label>
             <select class="fp-softener">
@@ -1649,7 +1664,7 @@ function getFireplaceRowHTML(index) {
       </select>
     </div>
     <div class="form-group">
-      <label>Quantity</label>
+      <label>Fireplace Quantity</label>
       <select class="fp-qty">
         <option value="1">1</option>
         <option value="2">2</option>
@@ -1658,6 +1673,7 @@ function getFireplaceRowHTML(index) {
         <option value="5">5</option>
       </select>
     </div>
+    <span class="fp-per-label">per</span>
     <div class="form-group fp-softener-group">
       <label>Softener</label>
       <select class="fp-softener">
